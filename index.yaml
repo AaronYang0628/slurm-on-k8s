@@ -6,7 +6,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 2.22.0
-    created: "2025-02-20T13:58:39.316734056+08:00"
+    created: "2025-02-20T16:46:25.083692236+08:00"
     description: A Library Helm Chart for grouping common logic between bitnami charts.
       This chart is not deployable by itself.
     digest: f08ada920444add76d87a23c588089bfa1a59dd9cf516abe47bbc8aa0da9aee4
@@ -41,7 +41,7 @@ entries:
       licenses: Apache-2.0
     apiVersion: v2
     appVersion: 11.4.3
-    created: "2025-02-20T13:58:39.320463712+08:00"
+    created: "2025-02-20T16:46:25.087897673+08:00"
     dependencies:
     - name: common
       repository: oci://registry-1.docker.io/bitnamicharts
@@ -69,4 +69,4 @@ entries:
     urls:
     - charts/mariadb-19.0.6.tgz
     version: 19.0.6
-generated: "2025-02-20T13:58:39.30157758+08:00"
+generated: "2025-02-20T16:46:25.082799195+08:00"
