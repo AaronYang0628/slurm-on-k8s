@@ -7,11 +7,91 @@ metadata:
   name: slurmdeployment
 spec:
   chart:
-    name: nginx
-    repository: https://charts.bitnami.com/bitnami
-    version: 13.2.20
-    namespace: default
+    name: slurm
+    repository: https://aaronyang0628.github.io/slurm-on-k8s/chart
+    version: 1.0.3
+    namespace: slurm
   values:
-    service:
-      type: ClusterIP
-    replicaCount: 3
+    mariadb:
+      enabled: true
+      port: 3306
+      primary:
+        persistence:
+          enabled: false
+          storageClass: ""
+          size: 8Gi
+    auth:
+      ssh:
+        configmap:
+          name: slurm-ssh-auth-keys
+          prefabPubKeys: ["ssh-rsa sample_public_key"]
+    persistence:
+      shared:
+        enabled: true
+        accessModes:
+          - ReadWriteMany
+        name: slurm-shared-storage
+        storageClass: ""
+        size: 8Gi
+    munged:
+      image:
+        registry: docker-registry.lab.zverse.space
+        repository: data-and-computing/slurm-munged
+        tag: intelmpi-250208-r0
+        pullPolicy: IfNotPresent
+        pullSecrets: []
+      extraVolumes: []
+      extraVolumeMounts: []
+    slurmdbd:
+      image:
+        registry: docker-registry.lab.zverse.space
+        repository: data-and-computing/slurm-slurmdbd
+        tag: intelmpi-250208-r0
+        pullPolicy: IfNotPresent
+        pullSecrets: []
+      extraVolumes: []
+      extraVolumeMounts: []
+    slurmctld:
+      image:
+        registry: docker-registry.lab.zverse.space
+        repository: data-and-computing/slurm-slurmctld
+        tag: intelmpi-250208-r0
+        pullPolicy: IfNotPresent
+        pullSecrets: []
+      extraVolumes: []
+      extraVolumeMounts: []
+    login:
+      image:
+        registry: docker-registry.lab.zverse.space
+        repository: data-and-computing/slurm-login
+        tag: intelmpi-250208-r0
+        pullPolicy: IfNotPresent
+        pullSecrets: []
+      resources: 
+        limits:
+          cpu: 3000m
+          ephemeral-storage: 50Gi
+          memory: 8Gi
+        requests:
+          cpu: 500m
+          ephemeral-storage: 8Gi
+          memory: 1Gi
+      extraVolumes: []
+      extraVolumeMounts: []
+    slurmd:
+      replicaCount: 2
+      image:
+        registry: docker-registry.lab.zverse.space
+        repository: data-and-computing/slurm-slurmd
+        tag: intelmpi-250208-r0
+        pullPolicy: IfNotPresent
+        pullSecrets: []
+      resources: 
+        requests:
+          cpu: 500m
+          ephemeral-storage: 10Gi
+          memory: 1Gi
+      extraVolumes: []
+      extraVolumeMounts: []
+
+  

@@ -51,7 +51,7 @@ Slurm on Kubernetes provides the following features:
         ```
     4. test your helm chart
         ```shell
-        helm install slurm /tmp/slurm-1.0.X.tgz
+        helm install -f ./chart/values.yaml slurm /tmp/slurm-1.0.X.tgz
         ```
     5. index your chart
         ```shell

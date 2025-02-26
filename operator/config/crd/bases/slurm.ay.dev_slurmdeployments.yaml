@@ -59,22 +59,732 @@ spec:
                 type: object
               values:
                 properties:
-                  replicaCount:
-                    format: int32
-                    type: integer
-                  service:
+                  auth:
                     properties:
-                      type:
+                      ssh:
+                        properties:
+                          configmap:
+                            properties:
+                              name:
+                                default: slurm-ssh-auth-keys
+                                type: string
+                              prefabPubKeys:
+                                items:
+                                  type: string
+                                type: array
+                            required:
+                            - name
+                            - prefabPubKeys
+                            type: object
+                          secret:
+                            properties:
+                              keys:
+                                properties:
+                                  authorizedKeys:
+                                    default: authorized_keys
+                                    type: string
+                                  private:
+                                    default: id_rsa
+                                    type: string
+                                  public:
+                                    default: id_rsa.pub
+                                    type: string
+                                required:
+                                - authorizedKeys
+                                - private
+                                - public
+                                type: object
+                              name:
+                                default: slurm-ssh-keys
+                                type: string
+                            required:
+                            - keys
+                            - name
+                            type: object
+                        required:
+                        - configmap
+                        type: object
+                    type: object
+                  commonAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  commonLabels:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  configuration:
+                    properties:
+                      cgroup:
+                        properties:
+                          name:
+                            default: cgroup-conf
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - name
+                        - value
+                        type: object
+                      slurmConf:
+                        type: string
+                      slurmdbdConf:
                         type: string
                     required:
-                    - type
+                    - cgroup
+                    - slurmConf
+                    - slurmdbdConf
+                    type: object
+                  fullnameOverride:
+                    default: ""
+                    type: string
+                  image:
+                    properties:
+                      mirror:
+                        properties:
+                          registry:
+                            type: string
+                        required:
+                        - registry
+                        type: object
+                    required:
+                    - mirror
+                    type: object
+                  login:
+                    properties:
+                      commonLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      diagnosticMode:
+                        properties:
+                          args:
+                            items:
+                              type: string
+                            type: array
+                          command:
+                            items:
+                              type: string
+                            type: array
+                          enabled:
+                            default: false
+                            type: boolean
+                        required:
+                        - args
+                        - command
+                        - enabled
+                        type: object
+                      extraVolumeMounts:
+                        items:
+                          properties:
+                            mountPath:
+                              default: ""
+                              type: string
+                            name:
+                              default: ""
+                              type: string
+                          required:
+                          - mountPath
+                          - name
+                          type: object
+                        type: array
+                      extraVolumes:
+                        items:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        type: array
+                      image:
+                        properties:
+                          pullPolicy:
+                            default: IfNotPresent
+                            type: string
+                          pullSecrets:
+                            items:
+                              type: string
+                            type: array
+                          registry:
+                            default: localhost
+                            type: string
+                          repository:
+                            default: data-and-computing
+                            type: string
+                          tag:
+                            default: latest
+                            type: string
+                        required:
+                        - pullPolicy
+                        - pullSecrets
+                        - registry
+                        - repository
+                        - tag
+                        type: object
+                      name:
+                        default: login
+                        type: string
+                      resources:
+                        properties:
+                          limits:
+                            properties:
+                              cpu:
+                                default: 3000m
+                                type: string
+                              ephemeral-storage:
+                                default: 8Gi
+                                type: string
+                              memory:
+                                default: 2Gi
+                                type: string
+                            required:
+                            - cpu
+                            - ephemeral-storage
+                            - memory
+                            type: object
+                          requests:
+                            properties:
+                              cpu:
+                                default: 500m
+                                type: string
+                              ephemeral-storage:
+                                default: 2Gi
+                                type: string
+                              memory:
+                                default: 1Gi
+                                type: string
+                            required:
+                            - cpu
+                            - ephemeral-storage
+                            - memory
+                            type: object
+                        required:
+                        - requests
+                        type: object
+                    required:
+                    - image
+                    - name
+                    - resources
+                    type: object
+                  mariadb:
+                    properties:
+                      auth:
+                        properties:
+                          database:
+                            default: slurm_acct_db
+                            type: string
+                          password:
+                            default: password-for-slurm
+                            type: string
+                          username:
+                            default: slurm
+                            type: string
+                        type: object
+                      enabled:
+                        default: true
+                        type: boolean
+                      port:
+                        default: 3306
+                        format: int32
+                        type: integer
+                      primary:
+                        properties:
+                          persistence:
+                            properties:
+                              enabled:
+                                default: false
+                                type: boolean
+                              size:
+                                default: 2Gi
+                                type: string
+                              storageClass:
+                                default: ""
+                                type: string
+                            required:
+                            - enabled
+                            - size
+                            - storageClass
+                            type: object
+                        required:
+                        - persistence
+                        type: object
+                    required:
+                    - enabled
+                    - port
+                    type: object
+                  munged:
+                    properties:
+                      commonLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      diagnosticMode:
+                        properties:
+                          args:
+                            items:
+                              type: string
+                            type: array
+                          command:
+                            items:
+                              type: string
+                            type: array
+                          enabled:
+                            default: false
+                            type: boolean
+                        required:
+                        - args
+                        - command
+                        - enabled
+                        type: object
+                      extraVolumeMounts:
+                        items:
+                          properties:
+                            mountPath:
+                              default: ""
+                              type: string
+                            name:
+                              default: ""
+                              type: string
+                          required:
+                          - mountPath
+                          - name
+                          type: object
+                        type: array
+                      extraVolumes:
+                        items:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        type: array
+                      image:
+                        properties:
+                          pullPolicy:
+                            default: IfNotPresent
+                            type: string
+                          pullSecrets:
+                            items:
+                              type: string
+                            type: array
+                          registry:
+                            default: localhost
+                            type: string
+                          repository:
+                            default: data-and-computing
+                            type: string
+                          tag:
+                            default: latest
+                            type: string
+                        required:
+                        - pullPolicy
+                        - pullSecrets
+                        - registry
+                        - repository
+                        - tag
+                        type: object
+                      name:
+                        default: munged
+                        type: string
+                    required:
+                    - image
+                    - name
+                    type: object
+                  nameOverride:
+                    default: ""
+                    type: string
+                  persistence:
+                    properties:
+                      shared:
+                        properties:
+                          accessModes:
+                            items:
+                              type: string
+                            type: array
+                          enabled:
+                            default: true
+                            type: boolean
+                          existingClaim:
+                            default: ""
+                            type: string
+                          name:
+                            default: slurm-shared-storage
+                            type: string
+                          size:
+                            default: 8Gi
+                            type: string
+                          storageClass:
+                            default: ""
+                            type: string
+                        required:
+                        - accessModes
+                        - enabled
+                        - existingClaim
+                        - name
+                        - size
+                        - storageClass
+                        type: object
+                    required:
+                    - shared
+                    type: object
+                  resourcesPreset:
+                    default: nano
+                    type: string
+                  serviceAccount:
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      automount:
+                        default: true
+                        type: boolean
+                      name:
+                        default: slurm
+                        type: string
+                      role:
+                        properties:
+                          name:
+                            default: slurm
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      roleBinding:
+                        properties:
+                          name:
+                            default: slurm
+                            type: string
+                        required:
+                        - name
+                        type: object
+                    required:
+                    - annotations
+                    - automount
+                    - name
+                    - role
+                    - roleBinding
+                    type: object
+                  slurmctld:
+                    properties:
+                      commonLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      diagnosticMode:
+                        properties:
+                          args:
+                            items:
+                              type: string
+                            type: array
+                          command:
+                            items:
+                              type: string
+                            type: array
+                          enabled:
+                            default: false
+                            type: boolean
+                        required:
+                        - args
+                        - command
+                        - enabled
+                        type: object
+                      extraVolumeMounts:
+                        items:
+                          properties:
+                            mountPath:
+                              default: ""
+                              type: string
+                            name:
+                              default: ""
+                              type: string
+                          required:
+                          - mountPath
+                          - name
+                          type: object
+                        type: array
+                      extraVolumes:
+                        items:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        type: array
+                      image:
+                        properties:
+                          pullPolicy:
+                            default: IfNotPresent
+                            type: string
+                          pullSecrets:
+                            items:
+                              type: string
+                            type: array
+                          registry:
+                            default: localhost
+                            type: string
+                          repository:
+                            default: data-and-computing
+                            type: string
+                          tag:
+                            default: latest
+                            type: string
+                        required:
+                        - pullPolicy
+                        - pullSecrets
+                        - registry
+                        - repository
+                        - tag
+                        type: object
+                      name:
+                        default: slurmctld
+                        type: string
+                      replicaCount:
+                        default: 1
+                        format: int32
+                        type: integer
+                      resources:
+                        properties:
+                          limits:
+                            properties:
+                              cpu:
+                                default: 3000m
+                                type: string
+                              ephemeral-storage:
+                                default: 8Gi
+                                type: string
+                              memory:
+                                default: 2Gi
+                                type: string
+                            required:
+                            - cpu
+                            - ephemeral-storage
+                            - memory
+                            type: object
+                          requests:
+                            properties:
+                              cpu:
+                                default: 500m
+                                type: string
+                              ephemeral-storage:
+                                default: 2Gi
+                                type: string
+                              memory:
+                                default: 1Gi
+                                type: string
+                            required:
+                            - cpu
+                            - ephemeral-storage
+                            - memory
+                            type: object
+                        required:
+                        - requests
+                        type: object
+                    required:
+                    - image
+                    - name
+                    - replicaCount
+                    type: object
+                  slurmd:
+                    properties:
+                      commonLabels:
+                        items:
+                          type: string
+                        type: array
+                      diagnosticMode:
+                        properties:
+                          args:
+                            items:
+                              type: string
+                            type: array
+                          command:
+                            items:
+                              type: string
+                            type: array
+                          enabled:
+                            default: false
+                            type: boolean
+                        required:
+                        - args
+                        - command
+                        - enabled
+                        type: object
+                      extraVolumeMounts:
+                        items:
+                          properties:
+                            mountPath:
+                              default: ""
+                              type: string
+                            name:
+                              default: ""
+                              type: string
+                          required:
+                          - mountPath
+                          - name
+                          type: object
+                        type: array
+                      extraVolumes:
+                        items:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        type: array
+                      image:
+                        properties:
+                          pullPolicy:
+                            default: IfNotPresent
+                            type: string
+                          pullSecrets:
+                            items:
+                              type: string
+                            type: array
+                          registry:
+                            default: localhost
+                            type: string
+                          repository:
+                            default: data-and-computing
+                            type: string
+                          tag:
+                            default: latest
+                            type: string
+                        required:
+                        - pullPolicy
+                        - pullSecrets
+                        - registry
+                        - repository
+                        - tag
+                        type: object
+                      name:
+                        default: slurmd
+                        type: string
+                      replicaCount:
+                        default: 2
+                        format: int32
+                        type: integer
+                      resources:
+                        properties:
+                          limits:
+                            properties:
+                              cpu:
+                                default: 3000m
+                                type: string
+                              ephemeral-storage:
+                                default: 8Gi
+                                type: string
+                              memory:
+                                default: 2Gi
+                                type: string
+                            required:
+                            - cpu
+                            - ephemeral-storage
+                            - memory
+                            type: object
+                          requests:
+                            properties:
+                              cpu:
+                                default: 500m
+                                type: string
+                              ephemeral-storage:
+                                default: 2Gi
+                                type: string
+                              memory:
+                                default: 1Gi
+                                type: string
+                            required:
+                            - cpu
+                            - ephemeral-storage
+                            - memory
+                            type: object
+                        required:
+                        - requests
+                        type: object
+                    required:
+                    - image
+                    - name
+                    - replicaCount
+                    - resources
+                    type: object
+                  slurmdbd:
+                    properties:
+                      commonLabels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      diagnosticMode:
+                        properties:
+                          args:
+                            items:
+                              type: string
+                            type: array
+                          command:
+                            items:
+                              type: string
+                            type: array
+                          enabled:
+                            default: false
+                            type: boolean
+                        required:
+                        - args
+                        - command
+                        - enabled
+                        type: object
+                      extraVolumeMounts:
+                        items:
+                          properties:
+                            mountPath:
+                              default: ""
+                              type: string
+                            name:
+                              default: ""
+                              type: string
+                          required:
+                          - mountPath
+                          - name
+                          type: object
+                        type: array
+                      extraVolumes:
+                        items:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        type: array
+                      image:
+                        properties:
+                          pullPolicy:
+                            default: IfNotPresent
+                            type: string
+                          pullSecrets:
+                            items:
+                              type: string
+                            type: array
+                          registry:
+                            default: localhost
+                            type: string
+                          repository:
+                            default: data-and-computing
+                            type: string
+                          tag:
+                            default: latest
+                            type: string
+                        required:
+                        - pullPolicy
+                        - pullSecrets
+                        - registry
+                        - repository
+                        - tag
+                        type: object
+                      name:
+                        default: slurmdbd
+                        type: string
+                    required:
+                    - image
+                    - name
                     type: object
                 required:
-                - replicaCount
-                - service
+                - login
+                - mariadb
+                - munged
+                - slurmctld
+                - slurmd
+                - slurmdbd
                 type: object
             required:
             - chart
+            - values
             type: object
           status:
             description: SlurmDeploymentStatus defines the observed state of SlurmDeployment.

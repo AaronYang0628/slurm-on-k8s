@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace | quote }}
 spec:
   ttlSecondsAfterFinished: 1800
+  backoffLimit: 3
   template:
     spec:
       serviceAccountName: {{ include "slurm.serviceAccountName" . }}
@@ -14,7 +15,7 @@ spec:
         fsGroup: 0
       initContainers:
       - name: ssh-keygen
-        image: docker.io/library/debian:latest
+        image: {{ .Values.image.mirror.registry }}docker.io/library/debian:latest
         command: ["/bin/sh", "-c"]
         args:
           - |
@@ -29,7 +30,7 @@ spec:
           mountPath: /keys
       containers:
       - name: create-secret
-        image: docker.io/bitnami/kubectl:1.28-debian-11
+        image: {{ .Values.image.mirror.registry }}docker.io/bitnami/kubectl:1.28-debian-11
         command: ["/bin/sh", "-c"]
         args:
           - |

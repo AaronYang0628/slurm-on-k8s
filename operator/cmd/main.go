@@ -26,8 +26,6 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	slurmv1 "github.com/AaronYang0628/slurm-on-k8s/api/v1"
-	"github.com/AaronYang0628/slurm-on-k8s/internal/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -38,6 +36,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	slurmv1 "github.com/AaronYang0628/slurm-on-k8s/api/v1"
+	"github.com/AaronYang0628/slurm-on-k8s/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 

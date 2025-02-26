@@ -18,8 +18,6 @@ package v1
 
 import (
 	"encoding/json"
-	"fmt"
-	"strconv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -34,13 +32,251 @@ type ChartSpec struct {
 	Namespace  string `json:"namespace,omitempty"`
 }
 
-type ServiceSpec struct {
-	Type string `json:"type"`
+type MariaDBSpec struct {
+	// +kubebuilder:default=true
+	Enabled bool `json:"enabled"`
+	// +kubebuilder:default=3306
+	Port    int32              `json:"port"`
+	Auth    *MariaDBAuthSpec   `json:"auth,omitempty"`
+	Primary MariaDBPrimarySpec `json:"primary,omitempty"`
+}
+
+type MariaDBAuthSpec struct {
+	// +kubebuilder:default="slurm"
+	Username string `json:"username,omitempty"`
+	// +kubebuilder:default="password-for-slurm"
+	Password string `json:"password,omitempty"`
+	// +kubebuilder:default="slurm_acct_db"
+	DatabaseName string `json:"database,omitempty"`
+}
+
+type MariaDBPrimarySpec struct {
+	Persistence MariaDBPrimaryPersistenceSpec `json:"persistence"`
+}
+
+type MariaDBPrimaryPersistenceSpec struct {
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled"`
+	// +kubebuilder:default=""
+	StorageClass string `json:"storageClass"`
+	// +kubebuilder:default="2Gi"
+	Size string `json:"size"`
+}
+
+type AuthSpec struct {
+	SSH AuthSSHSpec `json:"ssh,omitempty"`
+}
+
+type AuthSSHSpec struct {
+	Secret    AuthSSHSecretSpec    `json:"secret,omitempty"`
+	ConfigMap AuthSSHConfigmapSpec `json:"configmap"`
+}
+
+type AuthSSHSecretSpec struct {
+	// +kubebuilder:default="slurm-ssh-keys"
+	Name string                `json:"name"`
+	Keys AuthSSHSecretKeysSpec `json:"keys"`
+}
+
+type AuthSSHSecretKeysSpec struct {
+	// +kubebuilder:default="id_rsa.pub"
+	Public string `json:"public"`
+	// +kubebuilder:default="id_rsa"
+	Private string `json:"private"`
+	// +kubebuilder:default="authorized_keys"
+	AuthorizedKeys string `json:"authorizedKeys"`
+}
+
+type AuthSSHConfigmapSpec struct {
+	// +kubebuilder:default="slurm-ssh-auth-keys"
+	Name          string   `json:"name"`
+	PrefabPubKeys []string `json:"prefabPubKeys"`
+}
+
+type PersistenceSpec struct {
+	Shared PersistenceSharedSpec `json:"shared"`
+}
+
+type PersistenceSharedSpec struct {
+	// +kubebuilder:default=true
+	Enabled bool `json:"enabled"`
+	// +kubebuilder:default="slurm-shared-storage"
+	Name string `json:"name"`
+	// +kubebuilder:default=""
+	ExistingClaim string   `json:"existingClaim"`
+	AccessModes   []string `json:"accessModes"`
+	// +kubebuilder:default=""
+	StorageClass string `json:"storageClass"`
+	// +kubebuilder:default="8Gi"
+	Size string `json:"size"`
+}
+
+type ImageSpec struct {
+	// +kubebuilder:default="localhost"
+	Registry string `json:"registry"`
+	// +kubebuilder:default="data-and-computing"
+	Repository string `json:"repository"`
+	// +kubebuilder:default="latest"
+	Tag string `json:"tag"`
+	// +kubebuilder:default="IfNotPresent"
+	PullPolicy  string   `json:"pullPolicy"`
+	PullSecrets []string `json:"pullSecrets"`
+}
+
+type DiagnosticModeSpec struct {
+	// +kubebuilder:default=false
+	Enabled bool     `json:"enabled"`
+	Command []string `json:"command"`
+	Args    []string `json:"args"`
+}
+
+type ExtraVolumeMountsSpec struct {
+	// +kubebuilder:default=""
+	Name string `json:"name"`
+	// +kubebuilder:default=""
+	MountPath string `json:"mountPath"`
+}
+
+type MungedSpec struct {
+	// +kubebuilder:default="munged"
+	Name              string                  `json:"name"`
+	CommonLabels      map[string]string       `json:"commonLabels,omitempty"`
+	Image             ImageSpec               `json:"image"`
+	DiagnosticMode    DiagnosticModeSpec      `json:"diagnosticMode,omitempty"`
+	ExtraVolumes      []map[string]string     `json:"extraVolumes,omitempty"`
+	ExtraVolumeMounts []ExtraVolumeMountsSpec `json:"extraVolumeMounts,omitempty"`
+}
+
+type SlurmctldSpec struct {
+	// +kubebuilder:default="slurmctld"
+	Name         string            `json:"name"`
+	CommonLabels map[string]string `json:"commonLabels,omitempty"`
+	Image        ImageSpec         `json:"image"`
+	// +kubebuilder:default=1
+	ReplicaCount      int32                   `json:"replicaCount"`
+	Resources         *ResourceSpec           `json:"resources,omitempty"`
+	DiagnosticMode    DiagnosticModeSpec      `json:"diagnosticMode,omitempty"`
+	ExtraVolumes      []map[string]string     `json:"extraVolumes,omitempty"`
+	ExtraVolumeMounts []ExtraVolumeMountsSpec `json:"extraVolumeMounts,omitempty"`
+}
+
+type SlurmdSpec struct {
+	// +kubebuilder:default="slurmd"
+	Name         string    `json:"name"`
+	CommonLabels []string  `json:"commonLabels,omitempty"`
+	Image        ImageSpec `json:"image"`
+	// +kubebuilder:default=2
+	ReplicaCount      int32                   `json:"replicaCount"`
+	Resources         ResourceSpec            `json:"resources"`
+	DiagnosticMode    DiagnosticModeSpec      `json:"diagnosticMode,omitempty"`
+	ExtraVolumes      []map[string]string     `json:"extraVolumes,omitempty"`
+	ExtraVolumeMounts []ExtraVolumeMountsSpec `json:"extraVolumeMounts,omitempty"`
+}
+
+type ResourceSpec struct {
+	Requests ResourceRequestSpec `json:"requests"`
+	Limits   *ResourceLimitSpec  `json:"limits,omitempty"`
+}
+
+type ResourceRequestSpec struct {
+	// +kubebuilder:default="500m"
+	CPU string `json:"cpu"`
+	// +kubebuilder:default="1Gi"
+	Memory string `json:"memory"`
+	// +kubebuilder:default="2Gi"
+	EphemeralStorage string `json:"ephemeral-storage"`
+}
+
+type ResourceLimitSpec struct {
+	// +kubebuilder:default="3000m"
+	CPU string `json:"cpu"`
+	// +kubebuilder:default="2Gi"
+	Memory string `json:"memory"`
+	// +kubebuilder:default="8Gi"
+	EphemeralStorage string `json:"ephemeral-storage"`
+}
+
+type SlurmdbdSpec struct {
+	// +kubebuilder:default="slurmdbd"
+	Name              string                  `json:"name"`
+	CommonLabels      map[string]string       `json:"commonLabels,omitempty"`
+	Image             ImageSpec               `json:"image"`
+	DiagnosticMode    DiagnosticModeSpec      `json:"diagnosticMode,omitempty"`
+	ExtraVolumes      []map[string]string     `json:"extraVolumes,omitempty"`
+	ExtraVolumeMounts []ExtraVolumeMountsSpec `json:"extraVolumeMounts,omitempty"`
+}
+
+type SlurmLogindSpec struct {
+	// +kubebuilder:default="login"
+	Name              string                  `json:"name"`
+	CommonLabels      map[string]string       `json:"commonLabels,omitempty"`
+	Image             ImageSpec               `json:"image"`
+	Resources         ResourceSpec            `json:"resources"`
+	DiagnosticMode    DiagnosticModeSpec      `json:"diagnosticMode,omitempty"`
+	ExtraVolumes      []map[string]string     `json:"extraVolumes,omitempty"`
+	ExtraVolumeMounts []ExtraVolumeMountsSpec `json:"extraVolumeMounts,omitempty"`
+}
+
+type ServiceAccountSpec struct {
+	// +kubebuilder:default=true
+	Automount   bool              `json:"automount"`
+	Annotations map[string]string `json:"annotations"`
+	// +kubebuilder:default="slurm"
+	Name        string                        `json:"name"`
+	Role        ServiceAccountRoleSpec        `json:"role"`
+	RoleBinding ServiceAccountRoleBindingSpec `json:"roleBinding"`
+}
+
+type ServiceAccountRoleSpec struct {
+	// +kubebuilder:default="slurm"
+	Name string `json:"name"`
+}
+
+type ServiceAccountRoleBindingSpec struct {
+	// +kubebuilder:default="slurm"
+	Name string `json:"name"`
+}
+
+type SlurmConfigSpec struct {
+	Cgroup       CgroupSpec `json:"cgroup"`
+	SlurmConf    string     `json:"slurmConf"`
+	SlurmdbdConf string     `json:"slurmdbdConf"`
+}
+
+type CgroupSpec struct {
+	// +kubebuilder:default="cgroup-conf"
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type ImageMirrorSpec struct {
+	Mirror MirrorSpec `json:"mirror"`
+}
+
+type MirrorSpec struct {
+	Registry string `json:"registry"`
 }
 
 type ValuesSpec struct {
-	Service      ServiceSpec `json:"service"`
-	ReplicaCount int32       `json:"replicaCount"`
+	Mariadb     MariaDBSpec     `json:"mariadb"`
+	Auth        AuthSpec        `json:"auth,omitempty"`
+	Persistence PersistenceSpec `json:"persistence,omitempty"`
+	ImageMirror ImageMirrorSpec `json:"image,omitempty"`
+	Munged      MungedSpec      `json:"munged"`
+	Slurmctld   SlurmctldSpec   `json:"slurmctld"`
+	Slurmd      SlurmdSpec      `json:"slurmd"`
+	Slurmdbd    SlurmdbdSpec    `json:"slurmdbd"`
+	SlurmLogin  SlurmLogindSpec `json:"login"`
+	// +kubebuilder:default="nano"
+	ResourcesPreset string             `json:"resourcesPreset,omitempty"`
+	ServiceAccount  ServiceAccountSpec `json:"serviceAccount,omitempty"`
+	SlurmConfig     SlurmConfigSpec    `json:"configuration,omitempty"`
+	// +kubebuilder:default=""
+	NameOverride string `json:"nameOverride,omitempty"`
+	// +kubebuilder:default=""
+	FullnameOverride  string            `json:"fullnameOverride,omitempty"`
+	CommonAnnotations map[string]string `json:"commonAnnotations,omitempty"`
+	CommonLabels      map[string]string `json:"commonLabels,omitempty"`
 }
 
 // SlurmDeploymentSpec defines the desired state of SlurmDeployment.
@@ -48,7 +284,7 @@ type SlurmDeploymentSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	Chart  ChartSpec  `json:"chart"`
-	Values ValuesSpec `json:"values,omitempty"`
+	Values ValuesSpec `json:"values"`
 }
 
 // SlurmDeploymentStatus defines the observed state of SlurmDeployment.
@@ -70,32 +306,43 @@ type SlurmDeployment struct {
 }
 
 func (v *ValuesSpec) UnmarshalJSON(data []byte) error {
-	type Alias ValuesSpec
 	aux := &struct {
-		Service      ServiceSpec `json:"service"`
-		ReplicaCount interface{} `json:"replicaCount"`
+		Mariadb           MariaDBSpec        `json:"mariadb"`
+		Auth              AuthSpec           `json:"auth,omitempty"`
+		Persistence       PersistenceSpec    `json:"persistence,omitempty"`
+		ImageMirror       ImageMirrorSpec    `json:"image,omitempty"`
+		Munged            MungedSpec         `json:"munged"`
+		Slurmctld         SlurmctldSpec      `json:"slurmctld"`
+		Slurmd            SlurmdSpec         `json:"slurmd"`
+		Slurmdbd          SlurmdbdSpec       `json:"slurmdbd"`
+		SlurmLogin        SlurmLogindSpec    `json:"login"`
+		ResourcesPreset   string             `json:"resourcesPreset,omitempty"`
+		ServiceAccount    ServiceAccountSpec `json:"serviceAccount,omitempty"`
+		SlurmConfig       SlurmConfigSpec    `json:"configuration,omitempty"`
+		NameOverride      string             `json:"nameOverride,omitempty"`
+		FullnameOverride  string             `json:"fullnameOverride,omitempty"`
+		CommonAnnotations map[string]string  `json:"commonAnnotations,omitempty"`
+		CommonLabels      map[string]string  `json:"commonLabels,omitempty"`
 	}{}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
-	v.Service = aux.Service
-	switch val := aux.ReplicaCount.(type) {
-	case int32:
-		v.ReplicaCount = val
-	case int:
-		v.ReplicaCount = int32(val)
-	case string:
-		num, err := strconv.ParseInt(val, 10, 32)
-		if err != nil {
-			return err
-		}
-		v.ReplicaCount = int32(num)
-	case float64:
-		// 处理 float64 类型
-		v.ReplicaCount = int32(val)
-	default:
-		return fmt.Errorf("unexpected type for replicaCount: %T", val)
-	}
+	v.Mariadb = aux.Mariadb
+	v.Auth = aux.Auth
+	v.Persistence = aux.Persistence
+	v.ImageMirror = aux.ImageMirror
+	v.Munged = aux.Munged
+	v.Slurmctld = aux.Slurmctld
+	v.Slurmd = aux.Slurmd
+	v.Slurmdbd = aux.Slurmdbd
+	v.SlurmLogin = aux.SlurmLogin
+	v.ResourcesPreset = aux.ResourcesPreset
+	v.ServiceAccount = aux.ServiceAccount
+	v.SlurmConfig = aux.SlurmConfig
+	v.NameOverride = aux.NameOverride
+	v.FullnameOverride = aux.FullnameOverride
+	v.CommonAnnotations = aux.CommonAnnotations
+	v.CommonLabels = aux.CommonLabels
 	return nil
 }
 

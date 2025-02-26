@@ -79,8 +79,8 @@ spec:
       {{- end }}
       initContainers:
         - name: check-dns
-          image: "{{ .Values.slurmctld.checkDns.image.registry }}/{{ .Values.slurmctld.checkDns.image.repository }}:{{ .Values.slurmctld.checkDns.image.tag }}"
-          imagePullPolicy: {{ .Values.slurmctld.image.pullPolicy }}
+          image: {{ .Values.image.mirror.registry }}docker.io/library/busybox:1.37.0-glibc
+          imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
             - -c
@@ -97,8 +97,8 @@ spec:
             - name: SLURMDBD_PORT
               value: {{ .Values.slurmdbd.service.slurmdbd.port | quote }}
         - name: init-permission
-          image: docker.io/library/busybox
-          tag: 1.37.0-glibc
+          image: {{ .Values.image.mirror.registry }}docker.io/library/busybox:1.37.0-glibc
+          imagePullPolicy: IfNotPresent
           command: ["sh", "-c", "chmod 755 /run/munge && chown 1108:1108 /run/munge"]
           volumeMounts:
             - name: munge-socket-file

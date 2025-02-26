@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-cleanup
+  namespace: {{ .Release.Namespace | quote }}
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 1800
+  backoffLimit: 3
+  template:
+    spec:
+      serviceAccountName: {{ include "slurm.serviceAccountName" . }}
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+      restartPolicy: OnFailure
+      containers:
+      - name: cleanup-container
+        image: {{ .Values.image.mirror.registry }}docker.io/bitnami/kubectl:1.28-debian-11
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            kubectl -n {{ .Release.Namespace }} delete secret {{ .Values.auth.ssh.secret.name }}
+            kubectl -n {{ .Release.Namespace }} delete configmap {{ .Values.auth.ssh.configmap.name }}

@@ -1,5 +1,6 @@
 mariadb:
   enabled: true
+  port: 3306
   auth:
     username: "slurm"
     password: "password-for-slurm"
@@ -29,14 +30,17 @@ persistence:
     name: slurm-shared-storage
     storageClass: ""
     size: 8Gi
+image:
+  mirror:
+    registry: m.lab.zverse.space/
 resourcesPreset: "nano"
 munged:
   name: munged
-  commonLabels: []
+  commonLabels: {}
   image:
-    registry: localhost
-    repository: ay-dev/slurm-munged
-    tag: "latest"
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-munged
+    tag: "intelmpi-250208-r0"
     pullPolicy: IfNotPresent
     pullSecrets: []
   diagnosticMode:
@@ -48,18 +52,11 @@ slurmctld:
   name: slurmctld
   commonLabels: {}
   image:
-    registry: localhost
-    repository: ay-dev/slurm-slurmctld
-    tag: "latest"
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-slurmctld
+    tag: "intelmpi-250208-r0"
     pullPolicy: IfNotPresent
     pullSecrets: []
-  checkDns:
-    image:
-      registry: docker.io
-      repository: library/busybox
-      tag: 1.37.0-glibc
-      pullPolicy: IfNotPresent
-      pullSecrets: []
   replicaCount: 1
   automountServiceAccountToken: false
   podLabels: {}
@@ -137,9 +134,9 @@ slurmd:
   name: slurmd
   commonLabels: {}
   image:
-    registry: localhost
-    repository: ay-dev/slurm-slurmd
-    tag: "intel-mpi"
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-slurmd
+    tag: "intelmpi-250208-r0"
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 2
@@ -181,7 +178,11 @@ slurmd:
     type: RollingUpdate
     rollingUpdate: {}
   lifecycleHooks: {}
-  resources: {}
+  resources: 
+    requests:
+      cpu: 1
+      ephemeral-storage: 10Gi
+      memory: 1Gi
   extraVolumes: []
   extraVolumeMounts: []
   livenessProbe:
@@ -219,9 +220,9 @@ slurmdbd:
   name: slurmdbd
   commonLabels: {}
   image:
-    registry: localhost
-    repository: ay-dev/slurm-slurmdbd
-    tag: "latest"
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-slurmdbd
+    tag: "intelmpi-250208-r0"
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -297,23 +298,13 @@ slurmdbd:
       type: ClusterIP
       port: 6819
       targetPort: 6819
-  volumePermissions:
-    image:
-      registry: docker.io
-      repository: bitnami/os-shell
-      tag: 12-debian-12-r30
-      pullPolicy: IfNotPresent
-      pullSecrets: []
-    volumePath: /etc/slurm/slurmdbd.conf
-    containerUID: 1109
-    containerGID: 1109
 login:
   name: login
   commonLabels: {}
   image:
-    registry: localhost
-    repository: ay-dev/slurm-login
-    tag: "intel-mpi"
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-login
+    tag: "intelmpi-250208-r0"
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -343,6 +334,8 @@ login:
     fsGroup: 0
   terminationGracePeriodSeconds: ""
   hostAliases: []
+  command: []
+  args: []
   diagnosticMode:
     enabled: false
     command: ["tail", "-f", "/etc/hosts"]
@@ -436,7 +429,7 @@ configuration:
     SlurmctldLogFile=/var/log/slurm/slurmctld.log
     SlurmdDebug=info
     SlurmdLogFile=/var/log/slurm/slurmd.log
-    NodeName={{ include "common.names.fullname" . }}-slurmd-[0-999] CPUs=6 CoresPerSocket=6 ThreadsPerCore=1 RealMemory=1024 Procs=1 State=UNKNOWN
+    NodeName={{ include "common.names.fullname" . }}-slurmd-[0-999] CPUs=8 CoresPerSocket=8 ThreadsPerCore=1 RealMemory=1024 Procs=1 State=UNKNOWN
     PartitionName=compute Nodes=ALL Default=YES MaxTime=INFINITE State=UP
   slurmdbdConf: |-
     AuthType=auth/munge
@@ -449,12 +442,12 @@ configuration:
     DbdPort={{ .Values.slurmdbd.service.slurmdbd.port }}
     StorageType=accounting_storage/mysql
     StorageHost={{ include "common.names.fullname" . }}-mariadb
-    StoragePort=3306
+    StoragePort={{ .Values.mariadb.port }}
     StoragePass={{ .Values.mariadb.auth.password }}
     StorageUser={{ .Values.mariadb.auth.username }}
     StorageLoc={{ .Values.mariadb.auth.database }}
 
 nameOverride: ""
 fullnameOverride: ""
-commonAnnotations: []
-commonLables: []
+commonAnnotations: {}
+commonLabels: {}

@@ -79,7 +79,7 @@ spec:
       {{- end }}
       initContainers:
         - name: init-permission
-          image: docker.io/library/busybox:1.37.0-glibc
+          image: {{ .Values.image.mirror.registry }}docker.io/library/busybox:1.37.0-glibc
           command: ["sh", "-c", "chmod 755 /run/munge && chown 1108:1108 /run/munge"]
           volumeMounts:
             - name: munge-socket-file

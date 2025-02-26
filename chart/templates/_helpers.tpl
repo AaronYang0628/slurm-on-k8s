@@ -75,5 +75,5 @@ Create the name of the rolebinding to use
 Return the proper Docker Image Registry Secret Names
 */}}
 {{- define "slurm.imagePullSecrets" -}}
-{{ include "common.images.renderPullSecrets" (dict "images" (list .Values.slurmctld.image .Values.slurmctld.checkDns.image .Values.slurmd.image ) "context" $) }}
+{{ include "common.images.renderPullSecrets" (dict "images" (list .Values.slurmctld.image .Values.slurmd.image ) "context" $) }}
 {{- end -}}
