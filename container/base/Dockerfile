@@ -1,13 +1,13 @@
-ARG OS_BASE_IMAGE=docker.io/library/debian:bookworm
+ARG OS_BASE_IMAGE=m.daocloud.io/docker.io/library/debian:bookworm
 FROM ${OS_BASE_IMAGE}
 
 ARG TZ=Asia/Shanghai
-ARG SLURM_VERSION=24.05.3
+ARG SLURM_VERSION=25.05.0
 ARG GOSU_VERSION=1.17
 ARG MUNGE_UID=1108
 ARG SLURM_UID=1109
 ARG WORKER_UID=1110
-ARG BUILDER_IMAGE=localhost/ay-dev/slurm-builder:latest
+ARG BUILDER_IMAGE=ghcr.io/aaronyang0628/slurm-builder:25.05
 ENV TZ=${TZ} \
     SLURM_VERSION=${SLURM_VERSION} \
     MUNGE_UID=1108 \
@@ -43,6 +43,6 @@ RUN chmod 775 /var/log \
     && chown slurm: /var/spool/slurmctld \
     && mkdir -p /etc/slurm \
     && rm -rf /slurm-${SLURM_VERSION}
-COPY --from=localhost/ay-dev/slurm-builder:latest /opt/slurm/debs/slurm-smd_${SLURM_VERSION}-1_amd64.deb /opt/slurm/debs/slurm-smd_${SLURM_VERSION}-1_amd64.deb
+COPY --from=${BUILDER_IMAGE} /opt/slurm/debs/slurm-smd_${SLURM_VERSION}-1_amd64.deb /opt/slurm/debs/slurm-smd_${SLURM_VERSION}-1_amd64.deb
 RUN apt install -y /opt/slurm/debs/slurm-smd_${SLURM_VERSION}-1_amd64.deb
 

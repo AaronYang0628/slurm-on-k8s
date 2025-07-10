@@ -19,7 +19,11 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: cleanup-container
-        image: {{ .Values.image.mirror.registry }}docker.io/bitnami/kubectl:1.28-debian-11
+        {{- if and .Values.image.mirror.registry (ne .Values.image.mirror.registry "") }}
+        image: {{ .Values.image.mirror.registry }}/docker.io/bitnami/kubectl:1.28-debian-11
+        {{- else }}
+        image: docker.io/bitnami/kubectl:1.28-debian-11
+        {{- end }}
         command: ["/bin/sh", "-c"]
         args:
           - |

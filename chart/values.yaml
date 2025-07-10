@@ -2,6 +2,7 @@ mariadb:
   enabled: true
   port: 3306
   auth:
+    rootPassword: "password-for-root"
     username: "slurm"
     password: "password-for-slurm"
     database: "slurm_acct_db"
@@ -32,15 +33,15 @@ persistence:
     size: 8Gi
 image:
   mirror:
-    registry: m.lab.zverse.space/
+    registry: m.daocloud.io
 resourcesPreset: "nano"
 munged:
   name: munged
   commonLabels: {}
   image:
-    registry: docker-registry.lab.zverse.space
-    repository: data-and-computing/slurm-munged
-    tag: "intelmpi-250208-r0"
+    registry: docker.io
+    repository: aaron666/munged
+    tag: "latest"
     pullPolicy: IfNotPresent
     pullSecrets: []
   diagnosticMode:
@@ -52,9 +53,9 @@ slurmctld:
   name: slurmctld
   commonLabels: {}
   image:
-    registry: docker-registry.lab.zverse.space
-    repository: data-and-computing/slurm-slurmctld
-    tag: "intelmpi-250208-r0"
+    registry: docker.io
+    repository: aaron666/slurm-slurmctld
+    tag: "latest"
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -130,16 +131,15 @@ slurmctld:
       type: ClusterIP
       port: 6817
       targetPort: 6817
-slurmd:
-  name: slurmd
+slurmdCPU:
   commonLabels: {}
   image:
-    registry: docker-registry.lab.zverse.space
-    repository: data-and-computing/slurm-slurmd
-    tag: "intelmpi-250208-r0"
+    registry: docker.io
+    repository: aaron666/slurm-slurmd
+    tag: "intel-mpi"
     pullPolicy: IfNotPresent
     pullSecrets: []
-  replicaCount: 2
+  replicaCount: 1
   automountServiceAccountToken: false
   podLabels: {}
   affinity: {}
@@ -207,7 +207,98 @@ slurmd:
     failureThreshold: 3
     successThreshold: 1
   service:
-    name: slurmd-headless
+    name: slurmd-cpu-headless
+    ssh:
+      type: ClusterIP
+      port: 22
+      targetPort: 22
+    slurmd:
+      type: ClusterIP
+      port: 6818
+      targetPort: 6818
+slurmdGPU:
+  commonLabels: {}
+  image:
+    registry: docker.io
+    repository: aaron666/slurm-slurmd
+    tag: "intel-mpi"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  automountServiceAccountToken: false
+  podLabels: {}
+  affinity: {}
+  podAnnotations: {}
+  podAffinityPreset: ""
+  podAntiAffinityPreset: soft
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  hostNetwork: false
+  dnsPolicy: ""
+  dnsConfig: {}
+  hostIPC: false
+  priorityClassName: ""
+  nodeSelector: {}
+  tolerations: []
+  schedulerName: ""
+  topologySpreadConstraints: []
+  podSecurityContext:
+    enabled: true
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+    fsGroup: 0
+  terminationGracePeriodSeconds: ""
+  hostAliases: []
+  diagnosticMode:
+    enabled: false
+    command: []
+    args: []
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  revisionHistoryLimit: 10
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+  lifecycleHooks: {}
+  resources: 
+    requests:
+      cpu: 500m
+      ephemeral-storage: 10Gi
+      memory: 1Gi
+      nvidia.com/gpu.shared: 1
+    limits:
+      cpu: 1
+      ephemeral-storage: 10Gi
+      memory: 2Gi
+      nvidia.com/gpu.shared: 1
+  extraVolumes: []
+  extraVolumeMounts: []
+  livenessProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    enabled: false
+    initialDelaySeconds: 5
+    timeoutSeconds: 3
+    periodSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  service:
+    name: slurmd-gpu-headless
     ssh:
       type: ClusterIP
       port: 22
@@ -220,9 +311,9 @@ slurmdbd:
   name: slurmdbd
   commonLabels: {}
   image:
-    registry: docker-registry.lab.zverse.space
-    repository: data-and-computing/slurm-slurmdbd
-    tag: "intelmpi-250208-r0"
+    registry: docker.io
+    repository: aaron666/slurm-slurmdbd
+    tag: "latest"
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -302,9 +393,9 @@ login:
   name: login
   commonLabels: {}
   image:
-    registry: docker-registry.lab.zverse.space
-    repository: data-and-computing/slurm-login
-    tag: "intelmpi-250208-r0"
+    registry: docker.io
+    repository: aaron666/slurm-login
+    tag: "intel-mpi"
     pullPolicy: IfNotPresent
     pullSecrets: []
   replicaCount: 1
@@ -406,7 +497,7 @@ configuration:
     SlurmctldPidFile=/var/run/slurmctld.pid
     SlurmctldPort={{ .Values.slurmctld.service.slurmctld.port }}
     SlurmdPidFile=/var/run/slurmd.pid
-    SlurmdPort={{ .Values.slurmd.service.slurmd.port }}
+    SlurmdPort=6818
     SlurmdSpoolDir=/var/spool/slurmd
     SlurmUser=slurm
     StateSaveLocation=/var/spool/slurmctld
@@ -429,7 +520,8 @@ configuration:
     SlurmctldLogFile=/var/log/slurm/slurmctld.log
     SlurmdDebug=info
     SlurmdLogFile=/var/log/slurm/slurmd.log
-    NodeName={{ include "common.names.fullname" . }}-slurmd-[0-999] CPUs=8 CoresPerSocket=8 ThreadsPerCore=1 RealMemory=1024 Procs=1 State=UNKNOWN
+    NodeName={{ include "common.names.fullname" . }}-slurmd-cpu-[0-999] CPUs=8 CoresPerSocket=8 ThreadsPerCore=1 RealMemory=1024 Procs=1 State=UNKNOWN
+    NodeName={{ include "common.names.fullname" . }}-slurmd-gpu-[0-999] CPUs=8 CoresPerSocket=8 ThreadsPerCore=1 RealMemory=1024 Procs=1 State=UNKNOWN
     PartitionName=compute Nodes=ALL Default=YES MaxTime=INFINITE State=UP
   slurmdbdConf: |-
     AuthType=auth/munge

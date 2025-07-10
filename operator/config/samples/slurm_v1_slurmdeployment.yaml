@@ -4,12 +4,12 @@ metadata:
   labels:
     app.kubernetes.io/name: operator
     app.kubernetes.io/managed-by: kustomize
-  name: slurmdeployment
+  name: slurm
 spec:
   chart:
     name: slurm
-    repository: https://aaronyang0628.github.io/slurm-on-k8s/chart
-    version: 1.0.3
+    repository: https://aaronyang0628.github.io/helm-chart-mirror/charts/slurm
+    version: 1.0.7
     namespace: slurm
   values:
     mariadb:
@@ -33,11 +33,14 @@ spec:
         name: slurm-shared-storage
         storageClass: ""
         size: 8Gi
+    image:
+      mirror:
+        registry: m.lab.zverse.space
     munged:
       image:
         registry: docker-registry.lab.zverse.space
         repository: data-and-computing/slurm-munged
-        tag: intelmpi-250208-r0
+        tag: "intelmpi-250208-r0"
         pullPolicy: IfNotPresent
         pullSecrets: []
       extraVolumes: []
@@ -64,7 +67,7 @@ spec:
       image:
         registry: docker-registry.lab.zverse.space
         repository: data-and-computing/slurm-login
-        tag: intelmpi-250208-r0
+        tag: intelmpi-250208-r0-lensing-v4
         pullPolicy: IfNotPresent
         pullSecrets: []
       resources: 
@@ -78,16 +81,33 @@ spec:
           memory: 1Gi
       extraVolumes: []
       extraVolumeMounts: []
-    slurmd:
-      replicaCount: 2
+    slurmdCPU:
+      replicaCount: 1
       image:
         registry: docker-registry.lab.zverse.space
         repository: data-and-computing/slurm-slurmd
-        tag: intelmpi-250208-r0
+        tag: intelmpi-250208-r0-lensing-v5.3
         pullPolicy: IfNotPresent
         pullSecrets: []
       resources: 
         requests:
+          core: 1
+          cpu: 500m
+          ephemeral-storage: 10Gi
+          memory: 1Gi
+      extraVolumes: []
+      extraVolumeMounts: []
+    slurmdGPU:
+      replicaCount: 1
+      image:
+        registry: docker-registry.lab.zverse.space
+        repository: data-and-computing/slurm-slurmd
+        tag: intelmpi-250208-r0-lensing-v5.3
+        pullPolicy: IfNotPresent
+        pullSecrets: []
+      resources: 
+        requests:
+          core: 1
           cpu: 500m
           ephemeral-storage: 10Gi
           memory: 1Gi

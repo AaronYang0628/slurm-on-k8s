@@ -1,0 +1,230 @@
+apiVersion: {{ include "common.capabilities.statefulset.apiVersion" . }}
+kind: StatefulSet
+metadata:
+  name: {{ include "common.names.fullname" . }}-slurmd-cpu
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "common.labels.standard" ( dict "customLabels" .Values.slurmdCPU.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: slurmd-cpu
+  {{- if .Values.slurmdCPU.commonAnnotations }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.slurmdCPU.commonAnnotations "context" $ ) | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.slurmdCPU.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  {{- if .Values.slurmdCPU.updateStrategy }}
+  updateStrategy: {{- toYaml .Values.slurmdCPU.updateStrategy | nindent 4 }}
+  {{- end }}
+  {{- $podLabels := include "common.tplvalues.merge" ( dict "values" ( list .Values.slurmdCPU.podLabels .Values.slurmdCPU.commonLabels ) "context" . ) }}
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 6 }}
+      app.kubernetes.io/component: slurmd-cpu
+  serviceName: {{ .Values.slurmdCPU.service.name }}
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" ( dict "customLabels" $podLabels "context" $ ) | nindent 8 }}
+        app.kubernetes.io/component: slurmd-cpu
+      annotations:
+        {{- if .Values.slurmdCPU.podAnnotations }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.slurmdCPU.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- include "slurm.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "slurm.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.slurmdCPU.automountServiceAccountToken }}
+      shareProcessNamespace: true
+      {{- if .Values.slurmdCPU.hostAliases }}
+      hostAliases: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.hostAliases "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.slurmdCPU.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.affinity "context" $) | nindent 8 }}
+      {{- else }}
+      affinity:
+        podAffinity: {{- include "common.affinities.pods" (dict "type" .Values.slurmdCPU.podAffinityPreset "customLabels" $podLabels "context" $) | nindent 10 }}
+        podAntiAffinity: {{- include "common.affinities.pods" (dict "type" .Values.slurmdCPU.podAntiAffinityPreset "customLabels" $podLabels "context" $) | nindent 10 }}
+        nodeAffinity: {{- include "common.affinities.nodes" (dict "type" .Values.slurmdCPU.nodeAffinityPreset.type "key" .Values.slurmdCPU.nodeAffinityPreset.key "values" .Values.slurmdCPU.nodeAffinityPreset.values) | nindent 10 }}
+      {{- end }}
+      hostNetwork: {{ .Values.slurmdCPU.hostNetwork }}
+      {{- if .Values.slurmdCPU.dnsPolicy  }}
+      dnsPolicy: {{ .Values.slurmdCPU.dnsPolicy }}
+      {{- end }}
+      {{- if .Values.slurmdCPU.dnsConfig }}
+      dnsConfig: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.dnsConfig "context" $) | nindent 8 }}
+      {{- else }}
+      dnsConfig:
+        searches:
+          - {{ .Values.slurmctld.service.name }}.{{ .Release.Namespace }}.svc.cluster.local
+          - {{ .Values.slurmdCPU.service.name }}.{{ .Release.Namespace }}.svc.cluster.local
+          - {{ .Values.slurmdGPU.service.name }}.{{ .Release.Namespace }}.svc.cluster.local
+      {{- end }}
+      hostIPC: {{ .Values.slurmdCPU.hostIPC }}
+      {{- if .Values.slurmdCPU.priorityClassName }}
+      priorityClassName: {{ .Values.slurmdCPU.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.slurmdCPU.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.slurmdCPU.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.slurmdCPU.schedulerName }}
+      schedulerName: {{ .Values.slurmdCPU.schedulerName | quote }}
+      {{- end }}
+      {{- if .Values.slurmdCPU.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.topologySpreadConstraints "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.slurmdCPU.podSecurityContext.enabled }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.slurmdCPU.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.slurmdCPU.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.slurmdCPU.terminationGracePeriodSeconds }}
+      {{- end }}
+      initContainers:
+        - name: init-permission
+          {{- if and .Values.image.mirror.registry (ne .Values.image.mirror.registry "") }}
+          image: {{ .Values.image.mirror.registry }}/docker.io/library/busybox:1.37.0-glibc
+          {{- else }}
+          image: docker.io/library/busybox:1.37.0-glibc
+          {{- end }}
+          command: ["sh", "-c", "chmod 755 /run/munge && chown 1108:1108 /run/munge"]
+          volumeMounts:
+            - name: munge-socket-file
+              mountPath: /run/munge
+      containers:
+        - name: munged
+          image: "{{ .Values.munged.image.registry }}/{{ .Values.munged.image.repository }}:{{ .Values.munged.image.tag }}"
+          imagePullPolicy: {{ .Values.munged.image.pullPolicy }}
+          {{- if .Values.munged.diagnosticMode.enabled }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.munged.diagnosticMode.command "context" $) | nindent 12 }}
+          {{- else if .Values.munged.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.munged.command "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.munged.diagnosticMode.enabled }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.munged.diagnosticMode.args "context" $) | nindent 12 }}
+          {{- else if .Values.munged.args }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.munged.args "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.munged.lifecycleHooks }}
+          lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.munged.lifecycleHooks "context" $) | nindent 12 }}
+          {{- end }}
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: munge-socket-file
+              mountPath: /run/munge
+            {{- if .Values.munged.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" ( dict "value" .Values.munged.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
+        - name: slurmd
+          image: "{{ .Values.slurmdCPU.image.registry }}/{{ .Values.slurmdCPU.image.repository }}:{{ .Values.slurmdCPU.image.tag }}"
+          imagePullPolicy: {{ .Values.slurmdCPU.image.pullPolicy }}
+          {{- if .Values.slurmdCPU.containerSecurityContext }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.slurmdCPU.containerSecurityContext "context" $) | nindent 12 }}
+          {{- else }}
+          securityContext:
+            privileged: true
+          {{- end }}
+          {{- if .Values.slurmdCPU.diagnosticMode.enabled }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.diagnosticMode.command "context" $) | nindent 12 }}
+          {{- else if .Values.slurmdCPU.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.command "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.slurmdCPU.diagnosticMode.enabled }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.diagnosticMode.args "context" $) | nindent 12 }}
+          {{- else if .Values.slurmdCPU.args }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.args "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.slurmdCPU.lifecycleHooks }}
+          lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.lifecycleHooks "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{- if .Values.slurmdCPU.extraEnvVars }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.extraEnvVars "context" $) | nindent 12 }}
+            {{- end }}
+          envFrom:
+            {{- if .Values.slurmdCPU.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.extraEnvVarsCM "context" $) }}
+            {{- end }}
+            {{- if .Values.slurmdCPU.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.extraEnvVarsSecret "context" $) }}
+            {{- end }}
+          ports:
+            - name: ssh
+              containerPort: {{ .Values.slurmdCPU.service.ssh.port }}
+            - name: slurmd
+              containerPort: {{ .Values.slurmdCPU.service.slurmd.port }}
+            {{- if .Values.slurmdCPU.extraContainerPorts }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.extraContainerPorts "context" $) | nindent 12 }}
+            {{- end }}
+          {{- if .Values.slurmdCPU.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.customLivenessProbe "context" $) | nindent 12 }}
+          {{- else if .Values.slurmdCPU.livenessProbe.enabled }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.slurmdCPU.livenessProbe "enabled") "context" $) | nindent 12 }}
+            tcpSocket:
+              port: ssh
+          {{- end }}
+          {{- if .Values.slurmdCPU.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.customReadinessProbe "context" $) | nindent 12 }}
+          {{- else if .Values.slurmdCPU.readinessProbe.enabled }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.slurmdCPU.readinessProbe "enabled" "path") "context" $) | nindent 12 }}
+            tcpSocket:
+              port: ssh
+          {{- end }}
+          {{- if .Values.slurmdCPU.customStartupProbe }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdCPU.customStartupProbe "context" $) | nindent 12 }}
+          {{- else if .Values.slurmdCPU.startupProbe.enabled }}
+          startupProbe: {{- include "common.tplvalues.render" (dict "value" (omit .Values.slurmdCPU.startupProbe "enabled") "context" $) | nindent 12 }}
+            tcpSocket:
+              port: ssh
+          {{- end }}
+          {{- if .Values.slurmdCPU.resources }}
+          resources: {{- toYaml .Values.slurmdCPU.resources | nindent 12 }}
+          {{- else if ne .Values.resourcesPreset "none" }}
+          resources: {{- include "common.resources.preset" (dict "type" .Values.resourcesPreset) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: ssh-keys
+              mountPath: /root/.ssh
+              readOnly: true
+            - name: shared-storage
+              mountPath: /data
+            - name: slurm-conf-file
+              mountPath: /etc/slurm/slurm.conf
+              subPath: slurm.conf
+            - name: cgroup-conf-file
+              mountPath: /etc/slurm/cgroup.conf
+              subPath: cgroup.conf
+            - name: munge-socket-file
+              mountPath: /run/munge
+            {{- if .Values.slurmdCPU.extraVolumeMounts }}
+            {{- include "common.tplvalues.render" ( dict "value" .Values.slurmdCPU.extraVolumeMounts "context" $) | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: ssh-keys
+          secret:
+            secretName: {{ .Values.auth.ssh.secret.name }}
+            items:
+              - key: {{ .Values.auth.ssh.secret.keys.private }}
+                path: {{ .Values.auth.ssh.secret.keys.private }}
+                mode: 256
+              - key: {{ .Values.auth.ssh.secret.keys.public }}
+                path: {{ .Values.auth.ssh.secret.keys.public }}
+                mode: 444
+              - key: {{ .Values.auth.ssh.secret.keys.authorizedKeys }}
+                path: {{ .Values.auth.ssh.secret.keys.authorizedKeys }}
+                mode: 384
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.shared.name }}
+        - name: slurm-conf-file
+          configMap:
+            name: {{ include "common.names.fullname" . }}-slurm-conf
+        - name: cgroup-conf-file
+          configMap:
+            name: {{ include "common.names.fullname" . }}-cgroup-conf
+        - name: munge-socket-file
+          emptyDir: {}
+        {{- if .Values.slurmdCPU.extraVolumes }}
+        {{- include "common.tplvalues.render" ( dict "value" .Values.slurmdCPU.extraVolumes "context" $) | nindent 8 }}
+        {{- end }}

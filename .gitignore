@@ -27,3 +27,4 @@ go.work
 *.swo
 *~
 buildah
+operator/api/v1/zz_generated.deepcopy.go

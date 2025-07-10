@@ -7,7 +7,8 @@ APP VERSION: {{ .Chart.AppVersion }}
 
 Slurm Cluster will contains 
   {{ .Values.slurmctld.replicaCount }} manager node (slurmctld)
-  {{ .Values.slurmd.replicaCount }} worker nodes (slurmd)
+  {{ .Values.slurmdCPU.replicaCount }} CPU worker nodes (slurmdCPU)
+  {{ .Values.slurmdGPU.replicaCount }} GPU worker nodes (slurmdGPU)
   {{ .Values.login.replicaCount }} login node
   {{ .Values.slurmdbd.replicaCount }} database node (slurmdbd)
 

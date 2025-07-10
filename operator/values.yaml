@@ -1,0 +1,560 @@
+USER-SUPPLIED VALUES:
+auth:
+  ssh:
+    configmap:
+      name: slurm-ssh-auth-keys
+      prefabPubKeys:
+      - ssh-rsa sample_public_key
+    secret:
+      keys:
+        authorizedKeys: authorized_keys
+        private: id_rsa
+        public: id_rsa.pub
+      name: slurm-ssh-keys
+commonAnnotations: {}
+commonLabels: {}
+configuration:
+  cgroup:
+    name: cgroup-conf
+    value: |-
+      ConstrainCores=yes
+      ConstrainDevices=yes
+      ConstrainRAMSpace=yes
+      ConstrainSwapSpace=no
+  slurmConf: |-
+    ClusterName=slurm-cluster
+    SlurmctldHost={{ include "common.names.fullname" . }}-{{ .Values.slurmctld.name }}-0
+    MpiDefault=pmi2
+    ProctrackType=proctrack/cgroup
+    ReturnToService=1
+    SlurmctldPidFile=/var/run/slurmctld.pid
+    SlurmctldPort={{ .Values.slurmctld.service.slurmctld.port }}
+    SlurmdPidFile=/var/run/slurmd.pid
+    SlurmdPort={{ .Values.slurmdCPU.service.slurmd.port }}
+    SlurmdSpoolDir=/var/spool/slurmd
+    SlurmUser=slurm
+    StateSaveLocation=/var/spool/slurmctld
+    TaskPlugin=task/affinity,task/cgroup
+    InactiveLimit=0
+    KillWait=30
+    MinJobAge=300
+    SlurmctldTimeout=120
+    SlurmdTimeout=300
+    Waittime=0
+    SchedulerType=sched/backfill
+    SelectType=select/cons_tres
+    AccountingStorageHost={{ include "common.names.fullname" . }}-{{ .Values.slurmdbd.name }}-0
+    AccountingStoragePort={{ .Values.slurmdbd.service.slurmdbd.port }}
+    AccountingStorageType=accounting_storage/slurmdbd
+    AccountingStoreFlags=job_comment
+    JobAcctGatherType=jobacct_gather/linux
+    JobAcctGatherFrequency=30
+    SlurmctldDebug=info
+    SlurmctldLogFile=/var/log/slurm/slurmctld.log
+    SlurmdDebug=info
+    SlurmdLogFile=/var/log/slurm/slurmd.log
+    NodeName={{ include "common.names.fullname" . }}-slurmd-[0-999] CPUs=1 CoresPerSocket=1 ThreadsPerCore=1 RealMemory=1024 Procs=1 State=UNKNOWN
+    PartitionName=compute Nodes=ALL Default=YES MaxTime=INFINITE State=UP
+  slurmdbdConf: |-
+    AuthType=auth/munge
+    AuthInfo=/var/run/munge/munge.socket.2
+    SlurmUser=slurm
+    DebugLevel=verbose
+    LogFile=/var/log/slurm/slurmdbd.log
+    PidFile=/var/run/slurmdbd.pid
+    DbdHost={{ include "common.names.fullname" . }}-{{ .Values.slurmdbd.name }}-0
+    DbdPort={{ .Values.slurmdbd.service.slurmdbd.port }}
+    StorageType=accounting_storage/mysql
+    StorageHost={{ include "common.names.fullname" . }}-mariadb
+    StoragePort={{ .Values.mariadb.port }}
+    StoragePass={{ .Values.mariadb.auth.password }}
+    StorageUser={{ .Values.mariadb.auth.username }}
+    StorageLoc={{ .Values.mariadb.auth.database }}
+fullnameOverride: ""
+image:
+  mirror:
+    registry: m.daocloud.io
+login:
+  affinity: {}
+  automountServiceAccountToken: false
+  commonLabels: {}
+  diagnosticMode:
+    args: null
+    command: null
+    enabled: false
+  dnsConfig: {}
+  dnsPolicy: ""
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  extraVolumeMounts: []
+  extraVolumes: []
+  hostAliases: []
+  hostIPC: false
+  hostNetwork: false
+  image:
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    registry: ghcr.io
+    repository: aaronyang0628/slurm-login
+    tag: 25.05-open-mpi
+  lifecycleHooks: {}
+  livenessProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  name: login
+  nodeAffinityPreset:
+    key: ""
+    type: ""
+    values: []
+  nodeSelector: {}
+  podAffinityPreset: ""
+  podAnnatations: {}
+  podAntiAffinityPreset: soft
+  podLabels: {}
+  podSecurityContext:
+    enabled: true
+    fsGroup: 0
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+  priorityClassName: ""
+  readinessProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 3000m
+      ephemeral-storage: 50Gi
+      memory: 8Gi
+    requests:
+      cpu: 500m
+      ephemeral-storage: 8Gi
+      memory: 1Gi
+  revisionHistoryLimit: 10
+  schedulerName: ""
+  service:
+    name: login
+    ssh:
+      port: 22
+      targetPort: 22
+      type: ClusterIP
+  startupProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  terminationGracePeriodSeconds: ""
+  tolerations: []
+  topologySpreadConstraints: []
+  updateStrategy:
+    rollingUpdate: {}
+    type: RollingUpdate
+mariadb:
+  auth:
+    database: slurm_acct_db
+    password: password-for-slurm
+    rootPassword: password-for-root
+    username: slurm
+  enabled: true
+  port: 3306
+  primary:
+    persistence:
+      enabled: false
+      size: 8Gi
+      storageClass: ""
+munged:
+  commonLabels: {}
+  diagnosticMode:
+    args: null
+    command: null
+    enabled: false
+  extraVolumeMounts: []
+  extraVolumes: []
+  image:
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    registry: ghcr.io
+    repository: aaronyang0628/slurm-munged
+    tag: "25.05"
+  name: munged
+nameOverride: ""
+persistence:
+  shared:
+    accessModes:
+    - ReadWriteMany
+    enabled: true
+    existingClaim: ""
+    name: slurm-shared-storage
+    size: 8Gi
+    storageClass: ""
+resourcesPreset: nano
+serviceAccount:
+  annotations: {}
+  automount: true
+  name: slurm
+  role:
+    name: slurm
+  roleBinding:
+    name: slurm
+slurmctld:
+  affinity: {}
+  automountServiceAccountToken: false
+  commonLabels: {}
+  diagnosticMode:
+    args: null
+    command: null
+    enabled: false
+  dnsConfig: {}
+  dnsPolicy: ""
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  extraVolumeMounts: []
+  extraVolumes: []
+  hostAliases: []
+  hostIPC: false
+  hostNetwork: false
+  image:
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    registry: ghcr.io
+    repository: aaronyang0628/slurm-slurmctld
+    tag: "25.05"
+  lifecycleHooks: {}
+  livenessProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  name: slurmctld
+  nodeAffinityPreset:
+    key: ""
+    type: ""
+    values: []
+  nodeSelector: {}
+  podAffinityPreset: ""
+  podAnnatations: {}
+  podAntiAffinityPreset: soft
+  podLabels: {}
+  podSecurityContext:
+    enabled: true
+    fsGroup: 0
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+  priorityClassName: ""
+  readinessProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 2000m
+      ephemeral-storage: 20Gi
+      memory: 2Gi
+    requests:
+      cpu: 1000m
+      ephemeral-storage: 10Gi
+      memory: 1Gi
+  revisionHistoryLimit: 10
+  schedulerName: ""
+  service:
+    name: slurmctld-headless
+    slurmctld:
+      port: 6817
+      targetPort: 6817
+      type: ClusterIP
+    ssh:
+      port: 22
+      targetPort: 22
+      type: ClusterIP
+  startupProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  terminationGracePeriodSeconds: ""
+  tolerations: []
+  topologySpreadConstraints: []
+  updateStrategy:
+    rollingUpdate: {}
+    type: RollingUpdate
+slurmdCPU:
+  affinity: {}
+  automountServiceAccountToken: false
+  commonLabels: {}
+  diagnosticMode:
+    args: null
+    command: null
+    enabled: false
+  dnsConfig: {}
+  dnsPolicy: ""
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  extraVolumeMounts: []
+  extraVolumes: []
+  hostAliases: []
+  hostIPC: false
+  hostNetwork: false
+  image:
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    registry: ghcr.io
+    repository: aaronyang0628/slurm-slurmd
+    tag: 25.05-open-mpi
+  lifecycleHooks: {}
+  livenessProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  name: slurmd
+  nodeAffinityPreset:
+    key: ""
+    type: ""
+    values: []
+  nodeSelector: {}
+  podAffinityPreset: ""
+  podAnnatations: {}
+  podAntiAffinityPreset: soft
+  podLabels: {}
+  podSecurityContext:
+    enabled: true
+    fsGroup: 0
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+  priorityClassName: ""
+  readinessProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 8000m
+      ephemeral-storage: 20Gi
+      memory: 8Gi
+    requests:
+      cpu: 500m
+      ephemeral-storage: 10Gi
+      memory: 1Gi
+  revisionHistoryLimit: 10
+  schedulerName: ""
+  service:
+    name: slurmd-headless
+    slurmd:
+      port: 6818
+      targetPort: 6818
+      type: ClusterIP
+    ssh:
+      port: 22
+      targetPort: 22
+      type: ClusterIP
+  startupProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  terminationGracePeriodSeconds: ""
+  tolerations: []
+  topologySpreadConstraints: []
+  updateStrategy:
+    rollingUpdate: {}
+    type: RollingUpdate
+slurmdGPU:
+  affinity: {}
+  automountServiceAccountToken: false
+  commonLabels: {}
+  diagnosticMode:
+    args: null
+    command: null
+    enabled: false
+  dnsConfig: {}
+  dnsPolicy: ""
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  extraVolumeMounts: []
+  extraVolumes: []
+  hostAliases: []
+  hostIPC: false
+  hostNetwork: false
+  image:
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    registry: ghcr.io
+    repository: aaronyang0628/slurm-slurmd
+    tag: 25.05-open-mpi
+  lifecycleHooks: {}
+  livenessProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  name: slurmd
+  nodeAffinityPreset:
+    key: ""
+    type: ""
+    values: []
+  nodeSelector: {}
+  podAffinityPreset: ""
+  podAnnatations: {}
+  podAntiAffinityPreset: soft
+  podLabels: {}
+  podSecurityContext:
+    enabled: true
+    fsGroup: 0
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+  priorityClassName: ""
+  readinessProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  replicaCount: 0
+  resources:
+    limits:
+      cpu: 8000m
+      ephemeral-storage: 20Gi
+      memory: 8Gi
+    requests:
+      cpu: 500m
+      ephemeral-storage: 10Gi
+      memory: 1Gi
+  revisionHistoryLimit: 10
+  schedulerName: ""
+  service:
+    name: slurmd-headless
+    slurmd:
+      port: 6818
+      targetPort: 6818
+      type: ClusterIP
+    ssh:
+      port: 22
+      targetPort: 22
+      type: ClusterIP
+  startupProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  terminationGracePeriodSeconds: ""
+  tolerations: []
+  topologySpreadConstraints: []
+  updateStrategy:
+    rollingUpdate: {}
+    type: RollingUpdate
+slurmdbd:
+  affinity: {}
+  automountServiceAccountToken: false
+  commonLabels: {}
+  diagnosticMode:
+    args: null
+    command: null
+    enabled: false
+  dnsConfig: {}
+  dnsPolicy: ""
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  extraVolumeMounts: []
+  extraVolumes: []
+  hostAliases: []
+  hostIPC: false
+  hostNetwork: false
+  image:
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    registry: ghcr.io
+    repository: aaronyang0628/slurm-slurmdbd
+    tag: "25.05"
+  lifecycleHooks: {}
+  livenessProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  name: slurmdbd
+  nodeAffinityPreset:
+    key: ""
+    type: ""
+    values: []
+  nodeSelector: {}
+  podAffinityPreset: ""
+  podAnnatations: {}
+  podAntiAffinityPreset: soft
+  podLabels: {}
+  podSecurityContext:
+    enabled: true
+    fsGroup: 0
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+  priorityClassName: ""
+  readinessProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  replicaCount: 1
+  revisionHistoryLimit: 10
+  schedulerName: ""
+  service:
+    name: slurmdbd-headless
+    slurmdbd:
+      port: 6819
+      targetPort: 6819
+      type: ClusterIP
+    ssh:
+      port: 22
+      targetPort: 22
+      type: ClusterIP
+  startupProbe:
+    enabled: false
+    failureThreshold: 6
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  terminationGracePeriodSeconds: ""
+  tolerations: []
+  topologySpreadConstraints: []
+  updateStrategy:
+    rollingUpdate: {}
+    type: RollingUpdate

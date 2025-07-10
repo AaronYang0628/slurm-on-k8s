@@ -15,7 +15,11 @@ spec:
         fsGroup: 0
       initContainers:
       - name: ssh-keygen
-        image: {{ .Values.image.mirror.registry }}docker.io/library/debian:latest
+        {{- if and .Values.image.mirror.registry (ne .Values.image.mirror.registry "") }}
+        image: {{ .Values.image.mirror.registry }}/docker.io/library/debian:latest
+        {{- else }}
+        image: docker.io/library/debian:latest
+        {{- end }}
         command: ["/bin/sh", "-c"]
         args:
           - |
@@ -30,7 +34,11 @@ spec:
           mountPath: /keys
       containers:
       - name: create-secret
-        image: {{ .Values.image.mirror.registry }}docker.io/bitnami/kubectl:1.28-debian-11
+        {{- if and .Values.image.mirror.registry (ne .Values.image.mirror.registry "") }}
+        image: {{ .Values.image.mirror.registry }}/docker.io/library/debian:latest
+        {{- else }}
+        image: docker.io/library/debian:latest
+        {{- end }}
         command: ["/bin/sh", "-c"]
         args:
           - |

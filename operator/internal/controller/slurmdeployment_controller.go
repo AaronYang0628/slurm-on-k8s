@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	os_runtime "runtime"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -55,6 +57,17 @@ type SlurmDeploymentReconciler struct {
 // +kubebuilder:rbac:groups=slurm.ay.dev,resources=slurmdeployments,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=slurm.ay.dev,resources=slurmdeployments/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=slurm.ay.dev,resources=slurmdeployments/finalizers,verbs=update
+// +kubebuilder:rbac:groups=core,resources=namespaces,verbs=get;list;create;update;patch;delete;watch
+// +kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=services,verbs=get;list;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;create;update;patch;delete
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;create;update;patch;delete;watch
+// +kubebuilder:rbac:groups=apps,resources=deployments;statefulsets,verbs=get;list;create;update;patch;delete
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles;rolebindings,verbs=get;list;create;update;patch;delete
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;create;update;patch;delete
+// +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=get;list;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -69,6 +82,75 @@ func GetValueWithDefault[T any](ptr *T, defaultValue T) T {
 	return defaultValue
 }
 
+// parseMemory 将内存字符串（如"4Gi"）转换为整数（MB为单位）
+func parseMemory(memoryStr string) int {
+	// 移除空格
+	memoryStr = strings.TrimSpace(memoryStr)
+	// 如果字符串为空，返回默认值
+	if memoryStr == "" {
+		return 1024 // 默认1Gi = 1024MB
+	}
+	// 提取数字部分和单位部分
+	var value float64
+	var unit string
+	// 查找第一个非数字字符的位置
+	var i int
+	for i = 0; i < len(memoryStr); i++ {
+		if memoryStr[i] < '0' || memoryStr[i] > '9' {
+			if memoryStr[i] == '.' {
+				continue
+			}
+			break
+		}
+	}
+	// 解析数字部分
+	if i > 0 {
+		valueStr := memoryStr[:i]
+		if i < len(memoryStr) {
+			unit = memoryStr[i:]
+		}
+		var err error
+		value, err = strconv.ParseFloat(valueStr, 64)
+		if err != nil {
+			log.Printf("Error parsing memory value: %v", err)
+			return 1024 // 默认值
+		}
+	} else {
+		// 如果没有数字部分，返回默认值
+		return 1024
+	}
+	// 根据单位转换为MB
+	switch strings.ToLower(unit) {
+	case "e", "ei", "eib", "exbi", "exbibyte":
+		return int(value * 1024 * 1024 * 1024 * 1024 * 1024 * 1024)
+	case "p", "pi", "pib", "pebi", "pebibyte":
+		return int(value * 1024 * 1024 * 1024 * 1024 * 1024)
+	case "t", "ti", "tib", "tebi", "tebibyte":
+		return int(value * 1024 * 1024 * 1024 * 1024)
+	case "g", "gi", "gib", "gibi", "gibibyte":
+		return int(value * 1024)
+	case "m", "mi", "mib", "mebi", "mebibyte":
+		return int(value)
+	case "k", "ki", "kib", "kibi", "kibibyte":
+		return int(value / 1024)
+	case "eb":
+		return int(value * 1000 * 1000 * 1000 * 1000 * 1000 * 1000 / 1024 / 1024)
+	case "pb":
+		return int(value * 1000 * 1000 * 1000 * 1000 * 1000 / 1024 / 1024)
+	case "tb":
+		return int(value * 1000 * 1000 * 1000 * 1000 / 1024 / 1024)
+	case "gb":
+		return int(value * 1000 * 1000 * 1000 / 1024 / 1024)
+	case "mb":
+		return int(value * 1000 * 1000 / 1024 / 1024)
+	case "kb":
+		return int(value * 1000 / 1024 / 1024)
+	default:
+		// 如果没有单位或单位不识别，假设是MB
+		return int(value)
+	}
+}
+
 func buildChartValues(r *slurmv1.SlurmDeployment) map[string]interface{} {
 	if r.Spec.Values.CommonAnnotations == nil {
 		r.Spec.Values.CommonAnnotations = map[string]string{}
@@ -78,10 +160,60 @@ func buildChartValues(r *slurmv1.SlurmDeployment) map[string]interface{} {
 	}
 	if r.Spec.Values.Mariadb.Auth == nil {
 		r.Spec.Values.Mariadb.Auth = &slurmv1.MariaDBAuthSpec{
+			RootPassword: "password-for-root",
 			Username:     "slurm",
 			Password:     "password-for-slurm",
 			DatabaseName: "slurm_acct_db",
 		}
+	}
+
+	if r.Spec.Values.Slurmctld.Resources == nil {
+		r.Spec.Values.Slurmctld.Resources = &slurmv1.ResourceSpec{
+			Requests: &slurmv1.ResourceRequestSpec{
+				Core:             8,
+				CPU:              "1000m",
+				Memory:           "1Gi",
+				EphemeralStorage: "10Gi",
+			},
+			Limits: &slurmv1.ResourceLimitSpec{
+				Core:             8,
+				CPU:              "2000m",
+				Memory:           "2Gi",
+				EphemeralStorage: "20Gi",
+			},
+		}
+	}
+
+	if r.Spec.Values.SlurmdCPU.Resources.Limits == nil {
+		r.Spec.Values.SlurmdCPU.Resources.Limits = &slurmv1.ResourceLimitSpec{
+			CPU:              "2000m",
+			Memory:           "8Gi",
+			EphemeralStorage: "20Gi",
+		}
+	}
+
+	if r.Spec.Values.SlurmdGPU.Resources.Limits == nil {
+		r.Spec.Values.SlurmdGPU.Resources.Limits = &slurmv1.ResourceLimitSpec{
+			CPU:              "2000m",
+			Memory:           "8Gi",
+			EphemeralStorage: "20Gi",
+		}
+	}
+
+	if r.Spec.Values.SlurmLogin.Resources.Limits == nil {
+		r.Spec.Values.SlurmLogin.Resources.Limits = &slurmv1.ResourceLimitSpec{
+			CPU:              "2000m",
+			Memory:           "8Gi",
+			EphemeralStorage: "20Gi",
+		}
+	}
+
+	if r.Spec.Values.SlurmdCPU.Resources.Requests.Core == 0 {
+		r.Spec.Values.SlurmdCPU.Resources.Requests.Core = int32(os_runtime.NumCPU())
+	}
+
+	if r.Spec.Values.SlurmdGPU.Resources.Requests.Core == 0 {
+		r.Spec.Values.SlurmdGPU.Resources.Requests.Core = int32(os_runtime.NumCPU())
 	}
 
 	values := map[string]interface{}{
@@ -89,13 +221,19 @@ func buildChartValues(r *slurmv1.SlurmDeployment) map[string]interface{} {
 		"fullnameOverride":  r.Spec.Values.FullnameOverride,
 		"commonAnnotations": r.Spec.Values.CommonAnnotations,
 		"commonLabels":      r.Spec.Values.CommonLabels,
+		"image": map[string]interface{}{
+			"mirror": map[string]string{
+				"registry": r.Spec.Values.ImageMirror.Mirror.Registry,
+			},
+		},
 		"mariadb": map[string]interface{}{
 			"enabled": r.Spec.Values.Mariadb.Enabled,
 			"port":    r.Spec.Values.Mariadb.Port,
 			"auth": map[string]interface{}{
-				"username": r.Spec.Values.Mariadb.Auth.Username,
-				"password": r.Spec.Values.Mariadb.Auth.Password,
-				"database": r.Spec.Values.Mariadb.Auth.DatabaseName,
+				"rootPassword": r.Spec.Values.Mariadb.Auth.RootPassword,
+				"username":     r.Spec.Values.Mariadb.Auth.Username,
+				"password":     r.Spec.Values.Mariadb.Auth.Password,
+				"database":     r.Spec.Values.Mariadb.Auth.DatabaseName,
 			},
 			"primary": map[string]interface{}{
 				"persistence": map[string]interface{}{
@@ -134,7 +272,6 @@ func buildChartValues(r *slurmv1.SlurmDeployment) map[string]interface{} {
 		"resourcesPreset": r.Spec.Values.ResourcesPreset,
 		"munged": map[string]interface{}{
 			"name":         "munged",
-			"enabled":      true,
 			"commonLabels": map[string]string{},
 			"image": map[string]interface{}{
 				"registry":    r.Spec.Values.Munged.Image.Registry,
@@ -210,7 +347,7 @@ func buildChartValues(r *slurmv1.SlurmDeployment) map[string]interface{} {
 					"memory":            r.Spec.Values.Slurmctld.Resources.Requests.Memory,
 					"ephemeral-storage": r.Spec.Values.Slurmctld.Resources.Requests.EphemeralStorage,
 				},
-				"limit": map[string]string{
+				"limits": map[string]string{
 					"cpu":               r.Spec.Values.Slurmctld.Resources.Limits.CPU,
 					"memory":            r.Spec.Values.Slurmctld.Resources.Limits.Memory,
 					"ephemeral-storage": r.Spec.Values.Slurmctld.Resources.Limits.EphemeralStorage,
@@ -256,21 +393,21 @@ func buildChartValues(r *slurmv1.SlurmDeployment) map[string]interface{} {
 				},
 			},
 		},
-		"slurmd": map[string]interface{}{
+		"slurmdCPU": map[string]interface{}{
 			"name":         "slurmd",
 			"commonLabels": map[string]string{},
-			"replicaCount": r.Spec.Values.Slurmd.ReplicaCount,
+			"replicaCount": r.Spec.Values.SlurmdCPU.ReplicaCount,
 			"image": map[string]interface{}{
-				"registry":    r.Spec.Values.Slurmd.Image.Registry,
-				"repository":  r.Spec.Values.Slurmd.Image.Repository,
-				"tag":         r.Spec.Values.Slurmd.Image.Tag,
-				"pullPolicy":  r.Spec.Values.Slurmd.Image.PullPolicy,
-				"pullSecrets": r.Spec.Values.Slurmd.Image.PullSecrets,
+				"registry":    r.Spec.Values.SlurmdCPU.Image.Registry,
+				"repository":  r.Spec.Values.SlurmdCPU.Image.Repository,
+				"tag":         r.Spec.Values.SlurmdCPU.Image.Tag,
+				"pullPolicy":  r.Spec.Values.SlurmdCPU.Image.PullPolicy,
+				"pullSecrets": r.Spec.Values.SlurmdCPU.Image.PullSecrets,
 			},
 			"diagnosticMode": map[string]interface{}{
-				"enabled": r.Spec.Values.Slurmd.DiagnosticMode.Enabled,
-				"command": r.Spec.Values.Slurmd.DiagnosticMode.Command,
-				"args":    r.Spec.Values.Slurmd.DiagnosticMode.Args,
+				"enabled": r.Spec.Values.SlurmdCPU.DiagnosticMode.Enabled,
+				"command": r.Spec.Values.SlurmdCPU.DiagnosticMode.Command,
+				"args":    r.Spec.Values.SlurmdCPU.DiagnosticMode.Args,
 			},
 			"automountServiceAccountToken": false,
 			"podLabels":                    map[string]string{},
@@ -311,18 +448,18 @@ func buildChartValues(r *slurmv1.SlurmDeployment) map[string]interface{} {
 			"lifecycleHooks": map[string]string{},
 			"resources": map[string]interface{}{
 				"requests": map[string]string{
-					"cpu":               r.Spec.Values.Slurmd.Resources.Requests.CPU,
-					"memory":            r.Spec.Values.Slurmd.Resources.Requests.Memory,
-					"ephemeral-storage": r.Spec.Values.Slurmd.Resources.Requests.EphemeralStorage,
+					"cpu":               r.Spec.Values.SlurmdCPU.Resources.Requests.CPU,
+					"memory":            r.Spec.Values.SlurmdCPU.Resources.Requests.Memory,
+					"ephemeral-storage": r.Spec.Values.SlurmdCPU.Resources.Requests.EphemeralStorage,
 				},
 				"limits": map[string]string{
-					"cpu":               r.Spec.Values.Slurmd.Resources.Limits.CPU,
-					"memory":            r.Spec.Values.Slurmd.Resources.Limits.Memory,
-					"ephemeral-storage": r.Spec.Values.Slurmd.Resources.Limits.EphemeralStorage,
+					"cpu":               r.Spec.Values.SlurmdCPU.Resources.Limits.CPU,
+					"memory":            r.Spec.Values.SlurmdCPU.Resources.Limits.Memory,
+					"ephemeral-storage": r.Spec.Values.SlurmdCPU.Resources.Limits.EphemeralStorage,
 				},
 			},
-			"extraVolumes":      r.Spec.Values.Slurmd.ExtraVolumes,
-			"extraVolumeMounts": r.Spec.Values.Slurmd.ExtraVolumeMounts,
+			"extraVolumes":      r.Spec.Values.SlurmdCPU.ExtraVolumes,
+			"extraVolumeMounts": r.Spec.Values.SlurmdCPU.ExtraVolumeMounts,
 			"livenessProbe": map[string]interface{}{
 				"enabled":             false,
 				"initialDelaySeconds": 30,
@@ -348,7 +485,112 @@ func buildChartValues(r *slurmv1.SlurmDeployment) map[string]interface{} {
 				"failureThreshold":    6,
 			},
 			"service": map[string]interface{}{
-				"name": "slurmd-headless",
+				"name": "slurmd-cpu-headless",
+				"ssh": map[string]interface{}{
+					"type":       "ClusterIP",
+					"port":       22,
+					"targetPort": 22,
+				},
+				"slurmd": map[string]interface{}{
+					"type":       "ClusterIP",
+					"port":       6818,
+					"targetPort": 6818,
+				},
+			},
+		},
+		"slurmdGPU": map[string]interface{}{
+			"name":         "slurmd",
+			"commonLabels": map[string]string{},
+			"replicaCount": r.Spec.Values.SlurmdGPU.ReplicaCount,
+			"image": map[string]interface{}{
+				"registry":    r.Spec.Values.SlurmdGPU.Image.Registry,
+				"repository":  r.Spec.Values.SlurmdGPU.Image.Repository,
+				"tag":         r.Spec.Values.SlurmdGPU.Image.Tag,
+				"pullPolicy":  r.Spec.Values.SlurmdGPU.Image.PullPolicy,
+				"pullSecrets": r.Spec.Values.SlurmdGPU.Image.PullSecrets,
+			},
+			"diagnosticMode": map[string]interface{}{
+				"enabled": r.Spec.Values.SlurmdGPU.DiagnosticMode.Enabled,
+				"command": r.Spec.Values.SlurmdGPU.DiagnosticMode.Command,
+				"args":    r.Spec.Values.SlurmdGPU.DiagnosticMode.Args,
+			},
+			"automountServiceAccountToken": false,
+			"podLabels":                    map[string]string{},
+			"affinity":                     map[string]string{},
+			"podAnnatations":               map[string]string{},
+			"podAffinityPreset":            "",
+			"podAntiAffinityPreset":        "soft",
+			"nodeAffinityPreset": map[string]interface{}{
+				"type":   "",
+				"key":    "",
+				"values": []string{},
+			},
+			"hostNetwork":               false,
+			"dnsPolicy":                 "",
+			"dnsConfig":                 map[string]string{},
+			"hostIPC":                   false,
+			"priorityClassName":         "",
+			"nodeSelector":              map[string]string{},
+			"tolerations":               []string{},
+			"schedulerName":             "",
+			"topologySpreadConstraints": []string{},
+			"podSecurityContext": map[string]interface{}{
+				"enabled":             true,
+				"fsGroup":             0,
+				"fsGroupChangePolicy": "Always",
+				"supplementalGroups":  []string{},
+			},
+			"terminationGracePeriodSeconds": "",
+			"hostAliases":                   []string{},
+			"extraEnvVars":                  []string{},
+			"extraEnvVarsCM":                "",
+			"extraEnvVarsSecret":            "",
+			"revisionHistoryLimit":          10,
+			"updateStrategy": map[string]interface{}{
+				"type":          "RollingUpdate",
+				"rollingUpdate": map[string]string{},
+			},
+			"lifecycleHooks": map[string]string{},
+			"resources": map[string]interface{}{
+				"requests": map[string]string{
+					"cpu":               r.Spec.Values.SlurmdGPU.Resources.Requests.CPU,
+					"memory":            r.Spec.Values.SlurmdGPU.Resources.Requests.Memory,
+					"ephemeral-storage": r.Spec.Values.SlurmdGPU.Resources.Requests.EphemeralStorage,
+				},
+				"limits": map[string]string{
+					"cpu":               r.Spec.Values.SlurmdGPU.Resources.Limits.CPU,
+					"memory":            r.Spec.Values.SlurmdGPU.Resources.Limits.Memory,
+					"ephemeral-storage": r.Spec.Values.SlurmdGPU.Resources.Limits.EphemeralStorage,
+				},
+			},
+			"extraVolumes":      r.Spec.Values.SlurmdGPU.ExtraVolumes,
+			"extraVolumeMounts": r.Spec.Values.SlurmdGPU.ExtraVolumeMounts,
+			"livenessProbe": map[string]interface{}{
+				"enabled":             false,
+				"initialDelaySeconds": 30,
+				"timeoutSeconds":      5,
+				"periodSeconds":       10,
+				"successThreshold":    1,
+				"failureThreshold":    6,
+			},
+			"startupProbe": map[string]interface{}{
+				"enabled":             false,
+				"initialDelaySeconds": 30,
+				"timeoutSeconds":      5,
+				"periodSeconds":       10,
+				"successThreshold":    1,
+				"failureThreshold":    6,
+			},
+			"readinessProbe": map[string]interface{}{
+				"enabled":             false,
+				"initialDelaySeconds": 30,
+				"timeoutSeconds":      5,
+				"periodSeconds":       10,
+				"successThreshold":    1,
+				"failureThreshold":    6,
+			},
+			"service": map[string]interface{}{
+				"name": "slurmd-gpu-headless",
 				"ssh": map[string]interface{}{
 					"type":       "ClusterIP",
 					"port":       22,
@@ -581,7 +823,7 @@ ReturnToService=1
 SlurmctldPidFile=/var/run/slurmctld.pid
 SlurmctldPort={{ .Values.slurmctld.service.slurmctld.port }}
 SlurmdPidFile=/var/run/slurmd.pid
-SlurmdPort={{ .Values.slurmd.service.slurmd.port }}
+SlurmdPort=6818
 SlurmdSpoolDir=/var/spool/slurmd
 SlurmUser=slurm
 StateSaveLocation=/var/spool/slurmctld
@@ -604,7 +846,8 @@ SlurmctldDebug=info
 SlurmctldLogFile=/var/log/slurm/slurmctld.log
 SlurmdDebug=info
 SlurmdLogFile=/var/log/slurm/slurmd.log
-NodeName={{ include "common.names.fullname" . }}-slurmd-[0-999] CPUs={{ .Values.slurmd.resources.requests.cpu }} CoresPerSocket=6 ThreadsPerCore=1 RealMemory=1024 Procs=1 State=UNKNOWN
+NodeName={{ include "common.names.fullname" . }}-slurmd-cpu-[0-999] CPUs=` + fmt.Sprintf("%d", r.Spec.Values.SlurmdCPU.Resources.Requests.Core) + ` CoresPerSocket=` + fmt.Sprintf("%d", r.Spec.Values.SlurmdCPU.Resources.Requests.Core) + ` ThreadsPerCore=1 RealMemory=` + fmt.Sprintf("%d", parseMemory(r.Spec.Values.SlurmdCPU.Resources.Requests.Memory)) + ` Procs=1 State=UNKNOWN
+NodeName={{ include "common.names.fullname" . }}-slurmd-gpu-[0-999] CPUs=` + fmt.Sprintf("%d", r.Spec.Values.SlurmdGPU.Resources.Requests.Core) + ` CoresPerSocket=` + fmt.Sprintf("%d", r.Spec.Values.SlurmdGPU.Resources.Requests.Core) + ` ThreadsPerCore=1 RealMemory=` + fmt.Sprintf("%d", parseMemory(r.Spec.Values.SlurmdGPU.Resources.Requests.Memory)) + ` Procs=1 State=UNKNOWN
 PartitionName=compute Nodes=ALL Default=YES MaxTime=INFINITE State=UP`,
 			"slurmdbdConf": `AuthType=auth/munge
 AuthInfo=/var/run/munge/munge.socket.2
@@ -625,6 +868,9 @@ StorageLoc={{ .Values.mariadb.auth.database }}`,
 	return values
 }
 
+// SlurmDeploymentFinalizer is the name of the finalizer added to SlurmDeployment resources
+const SlurmDeploymentFinalizer = "slurm.ay.dev/finalizer"
+
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.20.0/pkg/reconcile
 func (r *SlurmDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -634,6 +880,55 @@ func (r *SlurmDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	log.Printf("Find SlurmDeployment %s", release.Name)
+
+	// Initialize Helm settings and configuration
+	settings := cli.New()
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(settings.RESTClientGetter(), release.Spec.Chart.Namespace, "secret", log.Printf); err != nil {
+		log.Printf("Failed to initialize Helm configuration: %v", err)
+		return ctrl.Result{}, err
+	}
+
+	// Check if the SlurmDeployment is being deleted
+	if !release.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is being deleted
+		if containsString(release.ObjectMeta.Finalizers, SlurmDeploymentFinalizer) {
+			// Our finalizer is present, so we need to clean up resources
+			log.Printf("Deleting Helm release %s in namespace %s", release.Name, release.Spec.Chart.Namespace)
+
+			// Uninstall the Helm release
+			uninstallClient := action.NewUninstall(actionConfig)
+			_, err := uninstallClient.Run(release.Name)
+			if err != nil {
+				// 如果错误是因为release不存在，我们可以忽略这个错误
+				if strings.Contains(err.Error(), "release: not found") {
+					log.Printf("Helm release %s not found, skipping uninstall", release.Name)
+				} else {
+					log.Printf("Failed to uninstall Helm release %s: %v", release.Name, err)
+					return ctrl.Result{}, err
+				}
+			}
+
+			// Remove our finalizer from the list and update it
+			release.ObjectMeta.Finalizers = removeString(release.ObjectMeta.Finalizers, SlurmDeploymentFinalizer)
+			if err := r.Update(ctx, release); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		// Stop reconciliation as the item is being deleted
+		return ctrl.Result{}, nil
+	}
+
+	// Add finalizer if it doesn't exist
+	if !containsString(release.ObjectMeta.Finalizers, SlurmDeploymentFinalizer) {
+		log.Printf("Adding finalizer to SlurmDeployment %s", release.Name)
+		release.ObjectMeta.Finalizers = append(release.ObjectMeta.Finalizers, SlurmDeploymentFinalizer)
+		if err := r.Update(ctx, release); err != nil {
+			return ctrl.Result{}, err
+		}
+		// Requeue to continue with installation after finalizer is added
+		return ctrl.Result{Requeue: true}, nil
+	}
 
 	// Check if namespace exists, if not, create it
 	namespace := release.Spec.Chart.Namespace
@@ -658,16 +953,22 @@ func (r *SlurmDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		}
 	}
 
-	// init Slurm Helm Chart settings
-	settings := cli.New()
-	actionConfig := new(action.Configuration)
-	if err := actionConfig.Init(settings.RESTClientGetter(), release.Spec.Chart.Namespace, "secret", log.Printf); err != nil {
-		log.Printf("Failed to initialize Helm configuration: %v", err)
-		return ctrl.Result{}, err
-	}
-
 	// build values yaml content for Slurm Chart
 	values := buildChartValues(release)
+
+	// import (
+	// 	"fmt"
+	// 	"gopkg.in/yaml.v3"
+	// )
+	// // // 将 map 转换为 YAML
+	// yamlData, err := yaml.Marshal(values)
+	// if err != nil {
+	// 	panic(fmt.Errorf("YAML marshal error: %w", err))
+	// }
+
+	// // 打印 YAML 输出
+	// fmt.Println("YAML Output:")
+	// fmt.Println(string(yamlData))
 
 	// Check release if exists
 	histClient := action.NewHistory(actionConfig)
@@ -869,6 +1170,26 @@ func extractTarGz(filePath, destPath string) error {
 }
 
 // SetupWithManager sets up the controller with the Manager.
+// Helper functions to check and remove string from a slice of strings.
+func containsString(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+func removeString(slice []string, s string) []string {
+	result := make([]string, 0, len(slice))
+	for _, item := range slice {
+		if item != s {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
 func (r *SlurmDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&slurmv1.SlurmDeployment{}).

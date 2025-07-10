@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.slurmdGPU.service.name }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels:
+    {{- include "common.labels.standard" ( dict "customLabels" .Values.slurmdGPU.commonLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: slurmd-gpu
+spec:
+  type: ClusterIP
+  {{- if and .Values.slurmdGPU.service.clusterIP (eq .Values.slurmdGPU.service.type "ClusterIP") }}
+  clusterIP: {{ .Values.slurmdGPU.service.clusterIP }}
+  {{- end }}
+  {{- if .Values.slurmctld.service.publishNotReadyAddresses }}
+  publishNotReadyAddresses: {{ .Values.slurmctld.service.publishNotReadyAddresses }}
+  {{- end }}
+  {{- if .Values.slurmdGPU.service.sessionAffinity }}
+  sessionAffinity: {{ .Values.slurmdGPU.service.sessionAffinity }}
+  {{- end }}
+  {{- if .Values.slurmdGPU.service.sessionAffinityConfig }}
+  sessionAffinityConfig: {{- include "common.tplvalues.render" (dict "value" .Values.slurmdGPU.service.sessionAffinityConfig "context" $) | nindent 4 }}
+  {{- end }}
+  {{- if or (eq .Values.slurmdGPU.service.type "LoadBalancer") (eq .Values.slurmdGPU.service.type "NodePort") }}
+  externalTrafficPolicy: {{ .Values.slurmdGPU.service.externalTrafficPolicy | quote }}
+  {{- end }}
+  {{- if and (eq .Values.slurmdGPU.service.type "LoadBalancer") (not (empty .Values.slurmdGPU.service.loadBalancerSourceRanges)) }}
+  loadBalancerSourceRanges: {{- toYaml .Values.slurmdGPU.service.loadBalancerSourceRanges | nindent 4 }}
+  {{- end }}
+  {{- if and (eq .Values.slurmdGPU.service.type "LoadBalancer") (not (empty .Values.slurmdGPU.service.loadBalancerIP)) }}
+  loadBalancerIP: {{ .Values.slurmdGPU.service.loadBalancerIP }}
+  {{- end }}
+  {{- if and (eq .Values.slurmdGPU.service.type "LoadBalancer") .Values.slurmdGPU.service.loadBalancerClass }}
+  loadBalancerClass: {{ .Values.slurmdGPU.service.loadBalancerClass }}
+  {{- end }}
+  ports:
+    {{- if .Values.slurmdGPU.service.ssh.port }}
+    - name: ssh
+      port: {{ .Values.slurmdGPU.service.ssh.port }}
+      targetPort: {{ .Values.slurmdGPU.service.ssh.targetPort }}
+    {{- end }}
+    {{- if .Values.slurmdGPU.service.slurmd }}
+    - name: slurmd
+      port: {{ .Values.slurmdGPU.service.slurmd.port }}
+      targetPort: {{ .Values.slurmdGPU.service.slurmd.targetPort }}
+    {{- end }}
+    {{- if .Values.slurmdGPU.service.extraPorts }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.slurmdGPU.service.extraPorts "context" $) | nindent 4 }}
+    {{- end }}
+  {{- $podLabels := include "common.tplvalues.merge" ( dict "values" ( list .Values.slurmdGPU.podLabels .Values.slurmdGPU.commonLabels ) "context" . ) }}
+  selector: {{- include "common.labels.matchLabels" ( dict "customLabels" $podLabels "context" $ ) | nindent 4 }}
+    app.kubernetes.io/component: slurmd-gpu

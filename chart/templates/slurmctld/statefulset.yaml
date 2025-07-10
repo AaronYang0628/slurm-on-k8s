@@ -52,7 +52,8 @@ spec:
       {{- else }}
       dnsConfig:
         searches:
-          - {{ .Values.slurmd.service.name }}.{{ .Release.Namespace }}.svc.cluster.local
+          - {{ .Values.slurmdCPU.service.name }}.{{ .Release.Namespace }}.svc.cluster.local
+          - {{ .Values.slurmdGPU.service.name }}.{{ .Release.Namespace }}.svc.cluster.local
           - {{ .Values.slurmdbd.service.name }}.{{ .Release.Namespace }}.svc.cluster.local
       {{- end }}
       hostIPC: {{ .Values.slurmctld.hostIPC }}
@@ -79,7 +80,11 @@ spec:
       {{- end }}
       initContainers:
         - name: check-dns
-          image: {{ .Values.image.mirror.registry }}docker.io/library/busybox:1.37.0-glibc
+          {{- if and .Values.image.mirror.registry (ne .Values.image.mirror.registry "") }}
+          image: {{ .Values.image.mirror.registry }}/docker.io/library/busybox:1.37.0-glibc
+          {{- else }}
+          image: docker.io/library/busybox:1.37.0-glibc
+          {{- end }}
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -97,7 +102,11 @@ spec:
             - name: SLURMDBD_PORT
               value: {{ .Values.slurmdbd.service.slurmdbd.port | quote }}
         - name: init-permission
-          image: {{ .Values.image.mirror.registry }}docker.io/library/busybox:1.37.0-glibc
+          {{- if .Values.image.mirror.registry }}
+          image: {{ .Values.image.mirror.registry }}/docker.io/library/busybox:1.37.0-glibc
+          {{- else }}
+          image: docker.io/library/busybox:1.37.0-glibc
+          {{- end }}
           imagePullPolicy: IfNotPresent
           command: ["sh", "-c", "chmod 755 /run/munge && chown 1108:1108 /run/munge"]
           volumeMounts:

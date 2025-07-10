@@ -1,10 +1,10 @@
-ARG OS_BASE_IMAGE=localhost/ay-dev/slurm-base:latest
+ARG OS_BASE_IMAGE=ghcr.io/aaronyang0628/slurm-base:25.05
 FROM ${OS_BASE_IMAGE}
 
-ARG SLURM_VERSION=24.05.3
-ARG BUILDER_IMAGE=localhost/ay-dev/slurm-builder:latest
-COPY --from=localhost/ay-dev/slurm-builder:latest /opt/slurm/debs/slurm-smd-slurmctld-dbgsym_${SLURM_VERSION}-1_amd64.deb /opt/slurm/debs/slurm-smd-slurmctld-dbgsym_${SLURM_VERSION}-1_amd64.deb
-COPY --from=localhost/ay-dev/slurm-builder:latest /opt/slurm/debs/slurm-smd-slurmctld_${SLURM_VERSION}-1_amd64.deb /opt/slurm/debs/slurm-smd-slurmctld_${SLURM_VERSION}-1_amd64.deb
+ARG SLURM_VERSION=25.05.0
+ARG BUILDER_IMAGE=ghcr.io/aaronyang0628/slurm-builder:25.05
+COPY --from=${BUILDER_IMAGE} /opt/slurm/debs/slurm-smd-slurmctld-dbgsym_${SLURM_VERSION}-1_amd64.deb /opt/slurm/debs/slurm-smd-slurmctld-dbgsym_${SLURM_VERSION}-1_amd64.deb
+COPY --from=${BUILDER_IMAGE} /opt/slurm/debs/slurm-smd-slurmctld_${SLURM_VERSION}-1_amd64.deb /opt/slurm/debs/slurm-smd-slurmctld_${SLURM_VERSION}-1_amd64.deb
 
 RUN apt install -y /opt/slurm/debs/slurm-smd-slurmctld-dbgsym_${SLURM_VERSION}-1_amd64.deb /opt/slurm/debs/slurm-smd-slurmctld_${SLURM_VERSION}-1_amd64.deb
 

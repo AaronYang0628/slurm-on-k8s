@@ -1,4 +1,4 @@
-ARG OS_BASE_IMAGE=localhost/ay-dev/slurm-base:latest
+ARG OS_BASE_IMAGE=ghcr.io/aaronyang0628/slurm-base:25.05
 FROM ${OS_BASE_IMAGE}
 
 COPY entrypoint.sh /opt/slurm/entrypoint.sh

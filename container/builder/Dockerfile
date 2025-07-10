@@ -1,8 +1,8 @@
-ARG OS_BASE_IMAGE=docker.io/library/debian:bookworm
+ARG OS_BASE_IMAGE=m.daocloud.io/docker.io/library/debian:bookworm
 
 FROM ${OS_BASE_IMAGE}
 ARG SLURM_BINARY_BASE_URL=https://download.schedmd.com/slurm
-ARG SLURM_VERSION=24.05.3
+ARG SLURM_VERSION=25.05.0
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get clean && apt-get update \
     && apt-get install -y build-essential fakeroot devscripts equivs curl

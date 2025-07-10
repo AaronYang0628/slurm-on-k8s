@@ -5,6 +5,8 @@
 domain: ay.dev
 layout:
 - go.kubebuilder.io/v4
+plugins:
+  helm.kubebuilder.io/v1-alpha: {}
 projectName: operator
 repo: github.com/AaronYang0628/slurm-on-k8s
 resources:

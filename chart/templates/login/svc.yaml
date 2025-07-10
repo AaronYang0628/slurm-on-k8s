@@ -7,7 +7,7 @@ metadata:
   {{- include "common.labels.standard" ( dict "customLabels" .Values.login.commonLabels "context" $ ) | nindent 4 }}
     app.kubernetes.io/component: login
 spec:
-  type: {{ .Values.login.service.type }}
+  type: ClusterIP
   {{- if and .Values.login.service.clusterIP (eq .Values.login.service.type "ClusterIP") }}
   clusterIP: {{ .Values.login.service.clusterIP }}
   {{- end }}

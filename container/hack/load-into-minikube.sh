@@ -10,13 +10,13 @@ load_image_to_minikube() {
     echo "Image $image_name has been loaded into Minikube."
 }
 
-if [ "$MPI_TYPE" = "opem-mpi" ]; then
+if [ "$MPI_TYPE" = "open-mpi" ]; then
     images=(
-        "localhost/ay-dev/slurm-login:open-mpi"
-        "localhost/ay-dev/slurm-slurmd:open-mpi"
-        "localhost/ay-dev/slurm-slurmctld:latest"
-        "localhost/ay-dev/slurm-slurmdbd:latest"
-        "localhost/ay-dev/slurm-munged:latest"
+        "ghcr.io/aaronyang0628/slurm-login:25.05-open-mpi"
+        "ghcr.io/aaronyang0628/slurm-slurmd:25.05-open-mpi"
+        "ghcr.io/aaronyang0628/slurm-slurmctld:25.05"
+        "ghcr.io/aaronyang0628/slurm-slurmdbd:25.05"
+        "ghcr.io/aaronyang0628/slurm-munged:25.05"
     )
 elif [ "$MPI_TYPE" = "intel-mpi" ]; then
     images=(
