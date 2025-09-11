@@ -4788,6 +4788,10 @@ spec:
                               memory:
                                 default: 2Gi
                                 type: string
+                              nvidia.com/gpu.shared:
+                                default: 0
+                                format: int32
+                                type: integer
                               socket:
                                 default: 1
                                 format: int32
@@ -4812,6 +4816,10 @@ spec:
                               memory:
                                 default: 1Gi
                                 type: string
+                              nvidia.com/gpu.shared:
+                                default: 0
+                                format: int32
+                                type: integer
                               socket:
                                 default: 1
                                 format: int32
@@ -6279,6 +6287,10 @@ spec:
                               memory:
                                 default: 2Gi
                                 type: string
+                              nvidia.com/gpu.shared:
+                                default: 0
+                                format: int32
+                                type: integer
                               socket:
                                 default: 1
                                 format: int32
@@ -6303,6 +6315,10 @@ spec:
                               memory:
                                 default: 1Gi
                                 type: string
+                              nvidia.com/gpu.shared:
+                                default: 0
+                                format: int32
+                                type: integer
                               socket:
                                 default: 1
                                 format: int32

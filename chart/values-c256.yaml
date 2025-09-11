@@ -1,0 +1,659 @@
+mariadb:
+  port: 3306
+  auth:
+    rootPassword: "password-for-root"
+    username: "slurm"
+    password: "password-for-slurm"
+    database: "slurm_acct_db"
+  primary:
+    persistence:
+      enabled: true
+      storageClass: "nas-nm129-25ge-si000958a3ec"
+      size: 8Gi
+  image:
+    registry: m.daocloud.io/docker.io
+    repository: bitnami/mariadb
+auth:
+  ssh:
+    secret:
+      name: slurm-ssh-keys
+      keys:
+        private: id_rsa
+        public: id_rsa.pub
+        authorizedKeys: authorized_keys
+    configmap:
+      name: slurm-ssh-auth-keys
+      prefabPubKeys:
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDswNB4af9NlQf9ix2VPO1bxqsMc96t6BOcJaBsQXD3xJ1271MX7/ospUKXyDDM/WEeMENR1H88le2fPmKOfWAu1UzZ/KBJakNpkEu9axi56hPULMnfK2d/pWyUwnOS21+8XdiEEWrwn5K2OBAGEmtN0lzmJbvTOM6HjUv3ZLnGEilLVZw3asCDA6AeED41z23xr2k48bS/kgCbpJElF2wiJYtErgstgRoBdyM+csDv8U5ryMuX2QGMQElnIIbCGFuwqm8XxOs7ZhxX1xRhWtqHX4/dnG4X81xr2U1nlTn+NCvA7YCsOUZwivOw26onHK5TW7bB8zvy5UaWNclG2psaDPtWmKsHDKPu7+q4MlQtdxIaYHhDZWKanWuM6eSDieTBso9J6TUXIaGFgJdJlyqv2DtTablxtvUyVpBjDJAxvecHNLiPMan8Dkl9W+zav8VLitptBXRQD3V5UW+IQp4u4DruHST+eLD2OTyHxJDAOTM+B4pwdoCJLxb0iZqQFNDmuix5L4K1GZHuwTKHK1+5RVEYPIOyqegPQhN8Spx7YW0IewA8LBdryvt1siXv8dAKt+P/yyz7iF39SupO4hI24Hj4oBkpxTpXim85JrjEZLqRQl5CSdX/ApGXmuX2yBzewiBEdZoecXkGMX89T5se+wcUW7wUeVILHfvm2RcaUQ== root@slurm-lensing-ssh-keygen-gmfs4"
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDL16X4q1ODC8ZvbWGDM+VKtMoX0q8b0vxMpCq2nT0KIpR/KLE+n4vj8CgQOeOP8TVnXU89JNfaPbqwSnpdkfjDvXrmdJ+QwG4fmralTXwkcTc4hPmtlHuB1A++o//phhD0DYeM1xKYJuI+XKCHsFCGpQYIEaaXrHeHCPGuH6/HMTbFm0kFa9rebH4qFQDm3o+uJLRHw4rQAOQwiHiriq9PzT9LdZDHmmMmq7GS09t9ZgL2LtWCBcAG0Fry1n612W23mpHFPV8x9i8xyRxYgcDNSfSa7XvIfrlF8RMgD4bL7RXWOry8UVw5EPzuhl6QQutZsUGEIINF9IgVkM2Ehrb2Q3B0TqlEx6L5e1hUhFOskdE6XX90BZ6zPNf0BktU/aB2Jp8NDXqwvRJEX4cNPMiYNDkvD7yKw0iN1+ZqbHVqZX+bzDdB1obbNVgrSJ9dQrN2svD+DqTzPbwY4vb9IXWujikKD1Jkd1FET8frw+vJuSgN8uZ1MJaoRoatFnoe2avm2YL6IRGjlyPypc1/B882ufz6zQclMsIegy0YnmVLYH3uawwQhlWIlDqbXmGPRUHtB7AJxYJHqTdbCvMhtGX2s1B0cR4Ai+5izOb2Hkfi0qui6ZxpCBnRDRJ5EEHYvy5Kwy22+GC46sWr3wU7aM2ZijMAVsg6y/qlBhBGbWSFnQ== byang628@zhejianglab.org"
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDpXWEE8Dser9cuYGKfCXkPuYJ//C7cSg/ONdsXBfW17i5kNLsUBQAkJO8ZSb7YjumPfjLYjf8ACEvv5URqxvq7iNtzDRNmcHNPxy5lBKz3dvNLCaDlGxFDpwSijUt/P3qqb5fmxwh6qKztUK7Q+LllP42prFZM1qfujzTaOAFBMg+bJWhFtXy9HXzIOmmz8XqAtKB3Yn+awoQTSO0oTPBhvKv9wF3O6el/EvMn7C+Tb7Gkb3oGHicev8MEKrHu8ZXDFQledS35jWoq//mFJIqTcZoYguwvBXHB0xwOWJ8Cv60uo0uauerUYD31Xtv2mLv9/QCUG2Zr1o+rbZncKnsR root@node-23"
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDNUqeNywN6ZvHzSh973LCMiOeHwk9Z+Sc5I6KlFntPId1ch6fZeaC9BpTLAn3ri+lonlYBMwabnGA/Hk+YdTh5VwPQCTAgGRw43G7kunNLtfxvMGxEF4y9B97bMwWaUdWPPII+/PDK1Qgnc0uFouyK2JgT1YnBXaGSyEXWNrmo/HYZuzbvh2+NmFA3GSfZPMWVkiAzH5kstW6Mw6huy3/PIaw8brFbxtb9VkEKRUnXwM61mPapk0zNHA8MSBQZOA2ZvJgqfn3fH78+rXNNt9orgKTjD4VUPSTIGjzJGJM8PysajhTE3vEYTjl2V3SJScZ9trYmboE8/ePm+SEXMwkFQK0J9cyBxrquhf66PITQWs+ZAvsMqWyQqvokVc9syLT5AGxU8GItoGRdZkrQuVjKGcJ0rrPjasXXJ7jKLVpXgHuRQISXF0OGJBU4jLMpZ95O8NDXJx83o0Kd4XogoyUCa1PjTzWJdEF50Ar4iZV+EMY7AIFeuu67E3LxfSGquws= chenruipeng@zhejianglab.com"
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCT2HGjUP4Kg5CfwKKVfTZpIgTdMVyTP+A4sUzwv8FDCl56YRZtcra9IvUFE3BJIsHjy25hQEvixWRNVlACjV2H0uSRQcm8eZiZFUiUUEF3XzbA4mlHYywYva7DfXATqf/G+NlRWVrz0dRCmMJXXwiRy8DhdyK1nFCc0yCQHev+LzAHvWfjGmhlB4Q4uaOLEs5ZCxtAhBpyDOFwtnclrVXS8Mmd5NUEZnkkVT/zirgFYD/TNgPF28LXfHpcV9vjLXgH7GcM8rKUrgvd30iRd/FO1RIQ0TPxfOJ5o0fBnpOmvJCLvF1rwEtgVMx4qAdsLQlD6oZXUtcdr0FgVpKoum19"
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCeiZ/rzJ8GI0PYMLUt7C+5yUrVDhr7wKFgdYkBLSzA1rh2t8ZiQDmdP854pr5OLP7690AVD3Dlq4FhbqH+7jdCGvoq21MgJqv4LQpGI6iiwuXkYdKyqEmA8W2Ff6F3SQ6+hpnetBb0113sxSo2e2Q2pXcc9Gs/7PPMmybBvvliX8jShqC1OrgnUJVh88gW2lxo1zbm3No37yBWPDNq7TC1xCH3Xcg6SPBzL+ND6bkf6ncYcLdBoZnQNsToGd6PLR58RzLzQ0vQcoSe/y1J9dFQ5Hu6RaB9vmmbGp6Pz/RMaM+Wh5ZcPF/pxkHX9djbQP6Vu5Kbt67htAp5FMZ0vzOX root@k8s-17"
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC+4vxNoFUo8rM36ZZzTNlYx8Il87Ty+MlKrYT0MROpaBmZ8FFOhlLGLcQy361ucWriUpZD5rui5PFpOvG1VlV4BabFWtB4GEDDxIEaUarYzGIzYlkmVZ6TQvCeozlOjRSJ9vfjzwGkdZRUDpNLA61KW2n75pdG0b7EemBLdWvMWcZFQf+Dd1cRdlJIp8rDl3i27xnKyGk3BvDc+S7Y9VKfVj8tWi1NJVEn2f5n2Bclx1eg4wFsSK8FY9qti5cTN5fvVVR4+L0jJ7Yy0CgUNrhDSLq2VV44gOVGdQ7N3iEL4u11ikU9849KaRZK5IruFMDbZUKUYBhl28dsewiQsY0aaFqzEr11HY7SP69i+tGL9SecXkWijLd20zZNagMCkkB6T8VLylCSY69JwRM0tnfgEYNdpPPq+kWnZYSeHuiREYtjsuggfpl3beUoOzRrgjF0uojyDpYzR8o7RVoiQaPDh4ZUILwpQ20TzeNHsIOVJdFKLuVAhKyL7XtQq95uVmk= chao931113@163.com"
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBN+TjF4+ue2pL5ps5jjh7j75A+3RyVJkfylpz9ZcTPV linn@shao.ac.cn"
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC8R15EWceOxbC8pk/Ko7SwyNjifNUQZ/Bgu1m9n0139NpTmyIkkRJqBi7pp17kfR4xBAPIcS4rMqb9Wf5nRVp49vjFJJxKhjSQYkTHqKGp3XJ7dhz0h9NFWsv5iVu7H4b9M1m3N/skY5D0zEi/RMUv+OkZ0Yda2YOlDc3s8QumbUlsJunz28dFcjipsSc/gW3Ngsa7AXDVW6QxhBNwtg6LwgUqXzFjkBa4P3RYO60ZH+VMyoeIlA8WwshJz1Z5CKI93Ri8rj/rd8pfA5cpiYhFI3Z4cUm0EgWRjywEI8nVMe+v5S5hQBepHodLGqrG3DU79hOx5JlufGmKfxFTj0k/gOPqgxFsrM2aJ534ulRh4+6QkgIbEmNTWmIrafD1utZrO9b1EBCE8jYcienDrGoy7g+jqjc+tiHZwWoqq6L32/50XzFm1n1bxdAKJ0DUqlmgWLwvQPRxQOJcWkm3QxLrK9TcNYZCiy/jnjZFna6Q3N2rDyGQIuLEy7lAbY1VVO4WU+PMwZN1wCL3aDbcH3Ref3wK1mfZXETMS7W6UNuC32ezjABX7JUaLqF6UfZoGHAw2hyrVSqqf8CQKZgMMbT0G+r+i63i4P8vjySJWwAAd2pek+cu0gRZW6+hVCFq3XXcDkleZdPOKlVik4TllomyQ4NGiWk4qCYJ2pQav1D+EQ== hklee@shao.ac.cn"
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDLX+MJgqQuPvIvjJPoTsr32v2shqu/kQONfUOvYTKw/HenZJWf9bODv3gWPJWnas/2VHtZRCz7E/W97hU6p8sAKd19VnuKPSbb79vKWDK+6cdLauYZdi/F1IHk+LpCUnVxmdrjU3IVnkYXCKtsOqYrlVNQRdxhD4h9lE0Rs/2Ypz1smaSOV4oytqOU3R00k+YxX8XNFPox3d+p9/b4spPYqt4l9eNj6yB8/nAISVVmn607PB7J/jo2HZYudo5tuVFjQIgPXzKtRrzfXAswReusK1X/Cx/jfiZuGqb5/HDYHl+YTdcweXOsCmVnDRdHcka/xiO1ePs/1/8DneurdJoC45nXcfOwZ9frJlO8+tEOR9THQYkDD/0xSkQ5QohQ5Ft1yDEiJUhVfAHsugisWtA1MvV+UAdihrYvYRxCzlwxouoxeK/Y4CXedYcadyADWpN3KKF+Oet1dyiNzLe1Tw6aS5rVMKhL5feKCd0PZ2ZXehQwSKnuRuSUlRCOrad2uTqYgMNOjv3yyDXYtVGDZk5sspwOimN3pDFV+L5BEwIghrYyga7Us7CqiTstWFJU3qJm2CndqrKB51OXvIhbww/XE7RBTYxYYzwxuFtf8aIxloJTiYI12L84O3PKmGOVS+6w3aNH/wCaCwZITLgsbV+oS/3Etu2foRQDcV3iHyl4jQ== hklee@shao.ac.cn"
+        - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDEmZ7xrzqKWXrFjAlT5Fr8x20NZ2VxpFcLh/A2xOjnBUNmDk3HgWUjJMaiRe6he1AKA2+moWl99LYsTgGqrRvfkF0SEb84HLzuoK5BLfa5EtPZfVZGYA30bqXYQF9c8VazVaNsTRguhRruiI5+RhCoYlETMitajQAd62d3YvyBSw4jxxaa7KoqUzNGXn1B57gk0l9nU5W1Y1LDbmKegXAVJBzMJ72vJRV/NBjVx1IWuU2Dv9FZzSSnoU8vOFaXXIfvLXoNTBvA6XYRkPNbcvDmuUkEGkWY53hOXY9UjTb+79KNAs4ee+m2LfMgIuqmBw8axmjx/eYn/K0apwBxlN6HO4OuieY7p/orJbQUOJpfxlQ6cCdmJvWj1eA6TIhhkmwXqYMA+ahBy4TJkEZHpELhWsN/l3ht9ogLKiR1uE69fqjpyST5A7RUebev+sZMHuccSvc5oto9RT9dzRFAiJbIJUkvGjnAE4xOEnANe943GDoaSKJTJ8eRj5kn7qFY800= liucong@DESKTOP-BRHVD7S"
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII/f+bngC7/u4SVcBuxX8d/lTYN1uXzwR/ruA7TISsIG gwz@LAPTOP-0D4431UD"
+persistence:
+  shared:
+    enabled: true
+    existingClaim: ""
+    accessModes:
+      - ReadWriteMany
+    name: slurm-shared-storage
+    storageClass: "nas-nm129-25ge-si000958a3ec"
+    size: 50Gi
+image:
+  mirror:
+    registry: m.lab.zverse.space
+resourcesPreset: "nano"
+munged:
+  name: munged
+  commonLabels: {}
+  image:
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-munged
+    tag: "intelmpi-250208-r0"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  diagnosticMode:
+    enabled: false
+    command: []
+    args: []
+  extraVolumeMounts: []
+slurmctld:
+  name: slurmctld
+  commonLabels: {}
+  image:
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-slurmctld
+    tag: "intelmpi-250208-r0"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  automountServiceAccountToken: false
+  podLabels: {}
+  affinity: {}
+  podAnnotations: {}
+  podAffinityPreset: ""
+  podAntiAffinityPreset: soft
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  hostNetwork: false
+  dnsPolicy: ""
+  dnsConfig: {}
+  hostIPC: false
+  priorityClassName: ""
+  nodeSelector: {}
+  tolerations: []
+  schedulerName: ""
+  topologySpreadConstraints: []
+  podSecurityContext:
+    enabled: true
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+    fsGroup: 0
+  terminationGracePeriodSeconds: ""
+  hostAliases: []
+  diagnosticMode:
+    enabled: false
+    command: []
+    args: []
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  revisionHistoryLimit: 10
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+  lifecycleHooks: {}
+  resources: {}
+  extraVolumes: []
+  extraVolumeMounts: []
+  livenessProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    enabled: false
+    initialDelaySeconds: 5
+    timeoutSeconds: 3
+    periodSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  service:
+    name: slurmctld-headless
+    ssh:
+      type: ClusterIP
+      port: 22
+      targetPort: 22
+    slurmctld:
+      type: ClusterIP
+      port: 6817
+      targetPort: 6817
+slurmdCPU:
+  commonLabels: {}
+  image:
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-slurmd
+    tag: "intelmpi-250208-r0-lensing-v5.3"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 7
+  automountServiceAccountToken: false
+  podLabels: {}
+  affinity: {}
+  podAnnotations: {}
+  podAffinityPreset: ""
+  podAntiAffinityPreset: soft
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  hostNetwork: false
+  dnsPolicy: ""
+  dnsConfig: {}
+  hostIPC: false
+  priorityClassName: ""
+  nodeSelector: {}
+  tolerations: []
+  schedulerName: ""
+  topologySpreadConstraints: []
+  podSecurityContext:
+    enabled: true
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+    fsGroup: 0
+  terminationGracePeriodSeconds: ""
+  hostAliases: []
+  diagnosticMode:
+    enabled: false
+    command: ["/bin/sh"]
+    args: ["-c", "sleep 1d"]
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  revisionHistoryLimit: 10
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+  lifecycleHooks: {}
+  resources: 
+    limits:
+      cpu: 8
+      ephemeral-storage: 50Gi
+      memory: 24Gi
+    requests:
+      cpu: 4
+      ephemeral-storage: 8Gi
+      memory: 16Gi
+  extraVolumes: 
+  - name: csst-lensing-download
+    nfs:
+      path: /lensing-download
+      readOnly: true
+      server: 14d744955f-d8693.cn-hangzhou-zjy-d01.nas.res.cloud.zhejianglab.com
+  - name: csst-lensing-download-v2
+    nfs:
+      path: /si000958a3ec/projects/04b03493c1-bdb94/dfs/files
+      readOnly: false
+      server: nas-nm129-25GE.alkaidos.cn
+  - name: dsf-l1-data
+    nfs:
+      path: /si0029456tl5/lensing
+      readOnly: false
+      server: nas-nm129-25GE.alkaidos.cn
+  - name: ptest
+    nfs:
+      path: /
+      readOnly: false
+      server: 1469f49ce6-27685.cn-hangzhou-zjy-d01.nas.ops.cloud.zhejianglab.com
+  extraVolumeMounts: 
+  - mountPath: /lensing-download
+    name: csst-lensing-download
+  - mountPath: /lensing-download-v2
+    name: csst-lensing-download-v2
+  - mountPath: /dfs-l1/data
+    name: dsf-l1-data
+  - mountPath: /mnt/test
+    name: ptest
+  livenessProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    enabled: false
+    initialDelaySeconds: 5
+    timeoutSeconds: 3
+    periodSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  service:
+    name: slurmd-cpu-headless
+    ssh:
+      type: ClusterIP
+      port: 22
+      targetPort: 22
+    slurmd:
+      type: ClusterIP
+      port: 6818
+      targetPort: 6818
+slurmdGPU:
+  commonLabels: {}
+  image:
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-slurmd
+    tag: "intelmpi-250208-r0-lensing-v5.3"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 0
+  automountServiceAccountToken: false
+  podLabels: {}
+  affinity: {}
+  podAnnotations: {}
+  podAffinityPreset: ""
+  podAntiAffinityPreset: soft
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  hostNetwork: false
+  dnsPolicy: ""
+  dnsConfig: {}
+  hostIPC: false
+  priorityClassName: ""
+  nodeSelector: {}
+  tolerations: []
+  schedulerName: ""
+  topologySpreadConstraints: []
+  podSecurityContext:
+    enabled: true
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+    fsGroup: 0
+  terminationGracePeriodSeconds: ""
+  hostAliases: []
+  diagnosticMode:
+    enabled: false
+    command: []
+    args: []
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  revisionHistoryLimit: 10
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+  lifecycleHooks: {}
+  resources: 
+    limits:
+      cpu: 8
+      ephemeral-storage: 50Gi
+      memory: 24Gi
+      nvidia.com/gpu.shared: 1
+    requests:
+      cpu: 4
+      ephemeral-storage: 8Gi
+      memory: 16Gi
+      nvidia.com/gpu.shared: 1
+  extraVolumes: 
+  - name: csst-lensing-download
+    nfs:
+      path: /lensing-download
+      readOnly: true
+      server: 14d744955f-d8693.cn-hangzhou-zjy-d01.nas.res.cloud.zhejianglab.com
+  - name: csst-lensing-download-v2
+    nfs:
+      path: /si000958a3ec/projects/04b03493c1-bdb94/dfs/files
+      readOnly: false
+      server: nas-nm129-25GE.alkaidos.cn
+  - name: dsf-l1-data
+    nfs:
+      path: /si0029456tl5/lensing
+      readOnly: false
+      server: nas-nm129-25GE.alkaidos.cn
+  - name: ptest
+    nfs:
+      path: /
+      readOnly: false
+      server: 1469f49ce6-27685.cn-hangzhou-zjy-d01.nas.ops.cloud.zhejianglab.com
+  extraVolumeMounts: 
+  - mountPath: /lensing-download
+    name: csst-lensing-download
+  - mountPath: /lensing-download-v2
+    name: csst-lensing-download-v2
+  - mountPath: /dfs-l1/data
+    name: dsf-l1-data
+  - mountPath: /mnt/test
+    name: ptest
+  livenessProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    enabled: false
+    initialDelaySeconds: 5
+    timeoutSeconds: 3
+    periodSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  service:
+    name: slurmd-gpu-headless
+    ssh:
+      type: ClusterIP
+      port: 22
+      targetPort: 22
+    slurmd:
+      type: ClusterIP
+      port: 6818
+      targetPort: 6818
+slurmdbd:
+  name: slurmdbd
+  commonLabels: {}
+  image:
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-slurmdbd
+    tag: "intelmpi-250208-r0"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  automountServiceAccountToken: false
+  podLabels: {}
+  affinity: {}
+  podAnnotations: {}
+  podAffinityPreset: ""
+  podAntiAffinityPreset: soft
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  hostNetwork: false
+  dnsPolicy: ""
+  dnsConfig: {}
+  hostIPC: false
+  priorityClassName: ""
+  nodeSelector: {}
+  tolerations: []
+  schedulerName: ""
+  topologySpreadConstraints: []
+  podSecurityContext:
+    enabled: true
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+    fsGroup: 0
+  terminationGracePeriodSeconds: ""
+  hostAliases: []
+  diagnosticMode:
+    enabled: false
+    command: []
+    args: []
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  revisionHistoryLimit: 10
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+  lifecycleHooks: {}
+  resources: {}
+  extraVolumes: []
+  extraVolumeMounts: []
+  livenessProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    enabled: false
+    initialDelaySeconds: 5
+    timeoutSeconds: 3
+    periodSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  service:
+    name: slurmdbd-headless
+    ssh:
+      type: ClusterIP
+      port: 22
+      targetPort: 22
+    slurmdbd:
+      type: ClusterIP
+      port: 6819
+      targetPort: 6819
+login:
+  name: login
+  commonLabels: {}
+  image:
+    registry: docker-registry.lab.zverse.space
+    repository: data-and-computing/slurm-login
+    tag: "intelmpi-250208-r0-lensing-v4"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  automountServiceAccountToken: false
+  podLabels: {}
+  affinity: {}
+  podAnnotations: {}
+  podAffinityPreset: ""
+  podAntiAffinityPreset: soft
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  hostNetwork: false
+  dnsPolicy: ""
+  dnsConfig: {}
+  hostIPC: false
+  priorityClassName: ""
+  nodeSelector: {}
+  tolerations: []
+  schedulerName: ""
+  topologySpreadConstraints: []
+  podSecurityContext:
+    enabled: true
+    fsGroupChangePolicy: Always
+    supplementalGroups: []
+    fsGroup: 0
+  terminationGracePeriodSeconds: ""
+  hostAliases: []
+  command: []
+  args: []
+  diagnosticMode:
+    enabled: false
+    command: ["tail", "-f", "/etc/hosts"]
+    args: []
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  revisionHistoryLimit: 10
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+  lifecycleHooks: {}
+  resources: 
+    limits:
+      cpu: 6
+      ephemeral-storage: 50Gi
+      memory: 18Gi
+    requests:
+      cpu: 4
+      ephemeral-storage: 8Gi
+      memory: 12Gi
+  extraVolumes: 
+  - name: csst-lensing-download
+    nfs:
+      path: /lensing-download
+      readOnly: true
+      server: 14d744955f-d8693.cn-hangzhou-zjy-d01.nas.res.cloud.zhejianglab.com
+  - name: csst-lensing-download-v2
+    nfs:
+      path: /si000958a3ec/projects/04b03493c1-bdb94/dfs/files
+      readOnly: false 
+      server: nas-nm129-25GE.alkaidos.cn
+  - name: dsf-l1-data
+    nfs:
+      path: /si0029456tl5/lensing
+      readOnly: false
+      server: nas-nm129-25GE.alkaidos.cn
+  - name: ptest
+    nfs:
+      path: /
+      readOnly: false
+      server: 1469f49ce6-27685.cn-hangzhou-zjy-d01.nas.ops.cloud.zhejianglab.com
+  extraVolumeMounts: 
+  - mountPath: /lensing-download
+    name: csst-lensing-download
+  - mountPath: /lensing-download-v2
+    name: csst-lensing-download-v2
+  - mountPath: /dfs-l1/data
+    name: dsf-l1-data
+  - mountPath: /mnt/test
+    name: ptest
+  livenessProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 30
+    timeoutSeconds: 5
+    periodSeconds: 10
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    enabled: false
+    initialDelaySeconds: 5
+    timeoutSeconds: 3
+    periodSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  service:
+    name: login
+    ssh:
+      type: NodePort
+      port: 22
+      targetPort: 22
+      nodePort: 31155
+
+serviceAccount:
+  automount: true
+  annotations: {}
+  name: "slurm"
+  role:
+    name: "slurm"
+  roleBinding:
+    name: "slurm"
+
+configuration:
+  cgroup:
+    name: cgroup-conf
+    value: |-
+      CgroupPlugin=autodetect
+      IgnoreSystemd=yes
+      IgnoreSystemdOnFailure=yes
+      ConstrainCores=yes
+      ConstrainDevices=yes
+      ConstrainRAMSpace=yes
+      ConstrainSwapSpace=no
+  slurmConf: |-
+    DebugFlags=cgroup
+    SlurmdDebug=debug
+    ClusterName=slurm-cluster
+    SlurmctldHost={{ include "slurm.fullname" . }}-{{ .Values.slurmctld.name }}-0
+    MpiDefault=pmi2
+    ReturnToService=1
+    SlurmctldPidFile=/var/run/slurmctld.pid
+    SlurmctldPort={{ .Values.slurmctld.service.slurmctld.port }}
+    SlurmdPidFile=/var/run/slurmd.pid
+    SlurmdPort=6818
+    SlurmdSpoolDir=/var/spool/slurmd
+    SlurmUser=slurm
+    StateSaveLocation=/var/spool/slurmctld
+    TaskPlugin=task/affinity,task/cgroup
+    ProctrackType=proctrack/cgroup
+    InactiveLimit=0
+    KillWait=30
+    MinJobAge=300
+    SlurmctldTimeout=120
+    SlurmdTimeout=300
+    Waittime=0
+    SchedulerType=sched/backfill
+    SelectType=select/cons_tres
+    AccountingStorageHost={{ include "slurm.fullname" . }}-{{ .Values.slurmdbd.name }}-0
+    AccountingStoragePort={{ .Values.slurmdbd.service.slurmdbd.port }}
+    AccountingStorageType=accounting_storage/slurmdbd
+    AccountingStoreFlags=job_comment
+    JobAcctGatherType=jobacct_gather/linux
+    JobAcctGatherFrequency=30
+    SlurmctldDebug=info
+    SlurmctldLogFile=/var/log/slurm/slurmctld.log
+    SlurmdLogFile=/var/log/slurm/slurmd.log
+    NodeName={{ include "slurm.fullname" . }}-slurmd-cpu-[0-99] CPUs=8 Sockets=2 CoresPerSocket=4 ThreadsPerCore=1 RealMemory=24576 State=UNKNOWN
+    NodeName={{ include "slurm.fullname" . }}-slurmd-gpu-[0-99] CPUs=8 Sockets=2 CoresPerSocket=4 ThreadsPerCore=1 RealMemory=24576 State=UNKNOWN
+    PartitionName=compute Nodes=ALL Default=YES MaxTime=INFINITE State=UP
+  slurmdbdConf: |-
+    AuthType=auth/munge
+    AuthInfo=/var/run/munge/munge.socket.2
+    SlurmUser=slurm
+    DebugLevel=verbose
+    LogFile=/var/log/slurm/slurmdbd.log
+    PidFile=/var/run/slurmdbd.pid
+    DbdHost={{ include "slurm.fullname" . }}-{{ .Values.slurmdbd.name }}-0
+    DbdPort={{ .Values.slurmdbd.service.slurmdbd.port }}
+    StorageType=accounting_storage/mysql
+    StorageHost={{ .Release.Name }}-mariadb
+    StoragePort={{ .Values.mariadb.port }}
+    StoragePass={{ .Values.mariadb.auth.password }}
+    StorageUser={{ .Values.mariadb.auth.username }}
+    StorageLoc={{ .Values.mariadb.auth.database }}
+
+nameOverride: ""
+fullnameOverride: ""
+commonAnnotations: {}
+commonLabels: {}

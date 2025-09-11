@@ -224,6 +224,8 @@ type SlurmdResourceRequestSpec struct {
 	Memory string `json:"memory"`
 	// +kubebuilder:default="2Gi"
 	EphemeralStorage string `json:"ephemeral-storage"`
+	// +kubebuilder:default=0
+	GPUShared int32 `json:"nvidia.com/gpu.shared,omitempty"`
 }
 
 type SlurmdResourceLimitSpec struct {
@@ -237,6 +239,8 @@ type SlurmdResourceLimitSpec struct {
 	Memory string `json:"memory"`
 	// +kubebuilder:default="8Gi"
 	EphemeralStorage string `json:"ephemeral-storage"`
+	// +kubebuilder:default=0
+	GPUShared int32 `json:"nvidia.com/gpu.shared,omitempty"`
 }
 
 type ResourceRequestSpec struct {

@@ -125,6 +125,7 @@ func BuildSlurmValues(valuesSpec *slurmv1.ValuesSpec) map[string]interface{} {
 			ThreadPerCore:    1,
 			Memory:           "8Gi",
 			EphemeralStorage: "20Gi",
+			GPUShared:        0,
 		}
 	}
 
@@ -145,6 +146,7 @@ func BuildSlurmValues(valuesSpec *slurmv1.ValuesSpec) map[string]interface{} {
 			ThreadPerCore:    1,
 			Memory:           "1Gi",
 			EphemeralStorage: "2Gi",
+			GPUShared:        0,
 		}
 	}
 
@@ -501,14 +503,16 @@ func BuildSlurmValues(valuesSpec *slurmv1.ValuesSpec) map[string]interface{} {
 			"lifecycleHooks": map[string]string{},
 			"resources": map[string]interface{}{
 				"requests": map[string]string{
-					"cpu":               fmt.Sprintf("%dm", valuesSpec.SlurmdGPU.Resources.Requests.Socket*valuesSpec.SlurmdGPU.Resources.Requests.CorePerSocket*valuesSpec.SlurmdGPU.Resources.Requests.ThreadPerCore*1000),
-					"memory":            valuesSpec.SlurmdGPU.Resources.Requests.Memory,
-					"ephemeral-storage": valuesSpec.SlurmdGPU.Resources.Requests.EphemeralStorage,
+					"cpu":                   fmt.Sprintf("%dm", valuesSpec.SlurmdGPU.Resources.Requests.Socket*valuesSpec.SlurmdGPU.Resources.Requests.CorePerSocket*valuesSpec.SlurmdGPU.Resources.Requests.ThreadPerCore*1000),
+					"memory":                valuesSpec.SlurmdGPU.Resources.Requests.Memory,
+					"ephemeral-storage":     valuesSpec.SlurmdGPU.Resources.Requests.EphemeralStorage,
+					"nvidia.com/gpu.shared": fmt.Sprintf("%d", valuesSpec.SlurmdGPU.Resources.Requests.GPUShared),
 				},
 				"limits": map[string]string{
-					"cpu":               fmt.Sprintf("%dm", valuesSpec.SlurmdGPU.Resources.Limits.Socket*valuesSpec.SlurmdGPU.Resources.Limits.CorePerSocket*valuesSpec.SlurmdGPU.Resources.Limits.ThreadPerCore*1000),
-					"memory":            valuesSpec.SlurmdGPU.Resources.Limits.Memory,
-					"ephemeral-storage": valuesSpec.SlurmdGPU.Resources.Limits.EphemeralStorage,
+					"cpu":                   fmt.Sprintf("%dm", valuesSpec.SlurmdGPU.Resources.Limits.Socket*valuesSpec.SlurmdGPU.Resources.Limits.CorePerSocket*valuesSpec.SlurmdGPU.Resources.Limits.ThreadPerCore*1000),
+					"memory":                valuesSpec.SlurmdGPU.Resources.Limits.Memory,
+					"ephemeral-storage":     valuesSpec.SlurmdGPU.Resources.Limits.EphemeralStorage,
+					"nvidia.com/gpu.shared": fmt.Sprintf("%d", valuesSpec.SlurmdGPU.Resources.Limits.GPUShared),
 				},
 			},
 			"extraVolumes":      valuesSpec.SlurmdGPU.ExtraVolumes,

@@ -116,7 +116,7 @@ spec:
       - mountPath: /lensing-download
         name: csst-lensing-download
     slurmdGPU:
-      replicaCount: 0
+      replicaCount: 1
       image:
         registry: docker-registry.lab.zverse.space
         repository: data-and-computing/slurm-slurmd
@@ -130,6 +130,7 @@ spec:
           thread-per-core: 1
           ephemeral-storage: 10Gi
           memory: 1Gi
+          nvidia.com/gpu.shared: 1
       nodeSelector: {}
       nodeAffinityPreset:
         type: ""
